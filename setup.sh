@@ -576,15 +576,58 @@ print_done() {
 }
 
 open_obsidian_app() {
-  # URL scheme force l'enregistrement du vault dans Obsidian (vs open -a qui
-  # ouvre seulement l'app sans le reconnaître comme vault).
-  local encoded_path
-  encoded_path="$(python3 -c "import urllib.parse, sys; print(urllib.parse.quote(sys.argv[1]))" "$VAULT_PATH" 2>/dev/null || echo "")"
+  # Enregistre le vault dans le registre Obsidian
+  # (~/Library/Application Support/obsidian/obsidian.json) pour qu'il s'ouvre
+  # directement au lancement, plutôt que de pop "Vault not found".
+  # Safe : backup + atomic write + fallback silencieux sur open -a si ça foire.
+  python3 - "$VAULT_PATH" <<'PYEOF' 2>/dev/null || true
+import json, os, secrets, shutil, sys, tempfile, time
 
-  if [ -n "$encoded_path" ]; then
-    open "obsidian://vault?path=$encoded_path" 2>/dev/null && return 0
-  fi
-  open -a Obsidian "$VAULT_PATH" 2>/dev/null || open -a Obsidian 2>/dev/null || true
+vault = sys.argv[1]
+config_dir = os.path.expanduser("~/Library/Application Support/obsidian")
+config = os.path.join(config_dir, "obsidian.json")
+
+try:
+    with open(config) as f:
+        data = json.load(f)
+    shutil.copy2(config, config + ".bak")
+except FileNotFoundError:
+    data = {}
+except Exception:
+    sys.exit(0)
+
+vaults = data.setdefault("vaults", {})
+
+# Si déjà enregistré, on réutilise l'id au lieu d'en créer un doublon
+target_id = next((vid for vid, v in vaults.items() if v.get("path") == vault), None)
+if target_id is None:
+    target_id = secrets.token_hex(8)
+    vaults[target_id] = {"path": vault, "ts": int(time.time() * 1000)}
+
+# Marque ce vault comme celui à ouvrir, désélectionne les autres
+for vid, v in vaults.items():
+    if vid == target_id:
+        v["open"] = True
+    else:
+        v.pop("open", None)
+
+# Atomic write : tempfile dans le même dossier puis os.replace
+try:
+    os.makedirs(config_dir, exist_ok=True)
+    fd, tmp = tempfile.mkstemp(dir=config_dir, prefix=".obsidian.json.", suffix=".tmp")
+    with os.fdopen(fd, "w") as f:
+        json.dump(data, f)
+    os.replace(tmp, config)
+except Exception:
+    if 'tmp' in dir() and os.path.exists(tmp):
+        try:
+            os.unlink(tmp)
+        except OSError:
+            pass
+    sys.exit(0)
+PYEOF
+
+  open -a Obsidian 2>/dev/null || true
 }
 
 # === Main ====================================================================
