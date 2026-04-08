@@ -161,23 +161,45 @@ step3_claude_code() {
 }
 
 # === Étape 4 : Python deps ===================================================
+# Trouve le meilleur Python ≥ 3.10 (3.9 est EOL depuis oct 2025 et les libs
+# récentes — google-genai, anthropic — balancent des deprecation warnings).
+find_python() {
+  local v
+  for v in 3.13 3.12 3.11 3.10; do
+    if command -v "python$v" &>/dev/null; then
+      echo "python$v"
+      return 0
+    fi
+  done
+  if command -v python3 &>/dev/null; then
+    echo python3
+    return 0
+  fi
+  return 1
+}
+
 step4_python_deps() {
   step 4 "Installation des dépendances Python"
 
   PIP_OK=false
-  if ! command -v python3 &>/dev/null; then
-    warn "Python 3 introuvable. Installe-le : brew install python3"
+  local python_bin
+  if ! python_bin="$(find_python)"; then
+    warn "Python 3 introuvable. Installe-le : brew install python@3.12"
     return 0
   fi
 
-  python3 -m venv "$VENV_DIR" 2>/dev/null || true
+  local py_version
+  py_version="$("$python_bin" --version 2>&1)"
+  info "Utilisation de $py_version ($python_bin)"
+
+  "$python_bin" -m venv "$VENV_DIR" 2>/dev/null || true
 
   if "$VENV_DIR/bin/pip" install -q -r "$SCRIPT_DIR/requirements.txt" 2>/dev/null; then
     ok "Paquets Python installés dans $VENV_DIR"
     PIP_OK=true
   else
     warn "Échec pip install. Pour réessayer manuellement :"
-    info "  python3 -m venv $VENV_DIR && $VENV_DIR/bin/pip install -r requirements.txt"
+    info "  $python_bin -m venv $VENV_DIR && $VENV_DIR/bin/pip install -r requirements.txt"
   fi
 }
 
@@ -316,7 +338,7 @@ step7_llm_config() {
   echo ""
   echo "  Quel LLM veux-tu utiliser pour traiter tes fichiers ?"
   echo ""
-  echo "  1) Gemini  — gratuit, recommandé pour démarrer"
+  echo "  1) Gemini  — quota gratuit (selon dispo Google AI Studio)"
   echo -e "             ${DIM}https://aistudio.google.com/apikey${RESET}"
   echo "  2) Claude  — payant, qualité supérieure"
   echo -e "             ${DIM}https://console.anthropic.com/${RESET}"
@@ -474,10 +496,12 @@ verify_install() {
     warn "Claude Code pas dans le PATH — redémarre le terminal puis : claude"
   fi
 
-  if command -v python3 &>/dev/null; then
+  if [ -x "$VENV_DIR/bin/python3" ]; then
+    ok "$("$VENV_DIR/bin/python3" --version 2>&1) (venv)"
+  elif command -v python3 &>/dev/null; then
     ok "$(python3 --version 2>&1)"
   else
-    err "Python 3 introuvable — brew install python3"
+    err "Python 3 introuvable — brew install python@3.12"
   fi
 
   if [ -f "$VAULT_PATH/CLAUDE.md" ]; then
@@ -538,11 +562,22 @@ print_done() {
   echo -e "     ${DIM}cd \"$VAULT_PATH\" && claude${RESET}"
   echo -e "  ${CYAN}4.${RESET} Tape ${DIM}/vault-setup${RESET} — Claude t'interviewe et personnalise ton vault"
   echo ""
+  echo -e "  ${WHITE}Pour éditer tes clés API plus tard :${RESET}"
+  echo -e "     ${DIM}open -e \"$VAULT_PATH/.env\"${RESET}  ${DIM}(le fichier est caché, préfixé par un point)${RESET}"
+  echo ""
   info "Ce script est safe à relancer — il détecte les vaults existants et n'écrase rien."
   echo ""
 }
 
 open_obsidian_app() {
+  # URL scheme force l'enregistrement du vault dans Obsidian (vs open -a qui
+  # ouvre seulement l'app sans le reconnaître comme vault).
+  local encoded_path
+  encoded_path="$(python3 -c "import urllib.parse, sys; print(urllib.parse.quote(sys.argv[1]))" "$VAULT_PATH" 2>/dev/null || echo "")"
+
+  if [ -n "$encoded_path" ]; then
+    open "obsidian://vault?path=$encoded_path" 2>/dev/null && return 0
+  fi
   open -a Obsidian "$VAULT_PATH" 2>/dev/null || open -a Obsidian 2>/dev/null || true
 }
 
