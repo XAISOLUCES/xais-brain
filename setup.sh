@@ -52,7 +52,13 @@ bootstrap_if_needed() {
     rm -rf "$boot"
     exit 1
   fi
-  XAIS_BRAIN_BOOTSTRAP_DIR="$boot" exec bash "$boot/setup.sh"
+  # En curl|bash, stdin est le pipe de curl (fermé après le download).
+  # On redirige stdin vers le TTY pour que les `read` interactifs marchent.
+  if [ ! -t 0 ] && [ -e /dev/tty ]; then
+    XAIS_BRAIN_BOOTSTRAP_DIR="$boot" exec bash "$boot/setup.sh" < /dev/tty
+  else
+    XAIS_BRAIN_BOOTSTRAP_DIR="$boot" exec bash "$boot/setup.sh"
+  fi
 }
 
 cleanup_bootstrap() {
