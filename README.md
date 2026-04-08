@@ -15,7 +15,7 @@
 ## Installation rapide
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/xais/xais-brain/main/setup.sh | bash
+curl -fsSL https://raw.githubusercontent.com/XAISOLUCES/xais-brain/main/setup.sh | bash
 ```
 
 Une seule commande, ~3 minutes. Le script t'interroge sur :
@@ -138,7 +138,7 @@ Le pattern modulaire garde `CLAUDE.md` léger et charge les règles spécialisé
 <summary>Si tu préfères ne pas lancer le one-liner</summary>
 
 ```bash
-git clone https://github.com/xais/xais-brain.git
+git clone https://github.com/XAISOLUCES/xais-brain.git
 cd xais-brain
 bash setup.sh
 ```
@@ -186,7 +186,7 @@ cp .env.example ~/mon-vault/.env
 
 Les PRs sont bienvenues. Pour ajouter une nouvelle skill, suivre la structure de [skills/vault-setup/SKILL.md](skills/vault-setup/SKILL.md) et ouvrir une PR.
 
-Pour signaler un bug : [GitHub Issues](https://github.com/xais/xais-brain/issues).
+Pour signaler un bug : [GitHub Issues](https://github.com/XAISOLUCES/xais-brain/issues).
 
 ---
 

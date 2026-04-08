@@ -1,14 +1,14 @@
 #!/bin/bash
 # ─────────────────────────────────────────────────────────────────────────────
 #  xais-brain — Installateur Obsidian + Claude Code
-#  https://github.com/xais/xais-brain
+#  https://github.com/XAISOLUCES/xais-brain
 # ─────────────────────────────────────────────────────────────────────────────
 set -e
 
 # === Constantes ==============================================================
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd || echo "$PWD")"
 VENV_DIR="$HOME/.xais-brain-venv"
-REPO_URL="https://github.com/xais/xais-brain.git"
+REPO_URL="https://github.com/XAISOLUCES/xais-brain.git"
 DEFAULT_VAULT="$HOME/xais-brain-vault"
 NUM_STEPS=9
 
