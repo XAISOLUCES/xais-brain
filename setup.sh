@@ -253,7 +253,10 @@ step5_vault() {
     handle_existing_vault
   fi
 
-  mkdir -p "$VAULT_PATH"/{inbox,daily,projects,research,archive,memory,scripts/providers,.claude/skills,.claude/rules}
+  # .obsidian/ est obligatoire : sans ce dossier, Obsidian refuse d'ouvrir
+  # le path et pop "Vault not found". Vide suffit, Obsidian le remplit au
+  # premier lancement (workspace.json, app.json, etc.).
+  mkdir -p "$VAULT_PATH"/{inbox,daily,projects,research,archive,memory,scripts/providers,.claude/skills,.claude/rules,.obsidian}
   copy_vault_template
 
   if [ "$IS_EXISTING_VAULT" = true ]; then
@@ -580,6 +583,14 @@ open_obsidian_app() {
   # (~/Library/Application Support/obsidian/obsidian.json) pour qu'il s'ouvre
   # directement au lancement, plutôt que de pop "Vault not found".
   # Safe : backup + atomic write + fallback silencieux sur open -a si ça foire.
+
+  # Si Obsidian tourne déjà, il garde son état en RAM et écrasera notre fichier
+  # au prochain quit. On prévient l'utilisateur et on n'écrit pas pour rien.
+  local obsidian_running=false
+  if pgrep -x Obsidian &>/dev/null; then
+    obsidian_running=true
+  fi
+
   python3 - "$VAULT_PATH" <<'PYEOF' 2>/dev/null || true
 import json, os, secrets, shutil, sys, tempfile, time
 
@@ -626,6 +637,13 @@ except Exception:
             pass
     sys.exit(0)
 PYEOF
+
+  if [ "$obsidian_running" = true ]; then
+    echo ""
+    warn "Obsidian était déjà en cours d'exécution."
+    info "Quitte-le complètement (Cmd+Q) puis relance-le pour qu'il s'ouvre directement sur ton vault."
+    info "Sinon, ouvre ton vault manuellement : Open folder as vault → $VAULT_PATH"
+  fi
 
   open -a Obsidian 2>/dev/null || true
 }
