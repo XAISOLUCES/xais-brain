@@ -33,14 +33,16 @@ Une seule commande, ~3 minutes. Le script t'interroge sur :
 | **Obsidian** | App de notes locale, fichiers Markdown |
 | **Claude Code CLI** | L'IA qui lit et écrit dans ton vault |
 | **Python venv** (`~/.xais-brain-venv/`) | Isolé du système, pas de pollution |
-| **6 slash commands** | `/vault-setup` `/daily` `/tldr` `/file-intel` `/inbox-zero` `/memory-add` |
+| **8 slash commands** | `/vault-setup` `/daily` `/tldr` `/file-intel` `/inbox-zero` `/memory-add` `/humanise` `/import-vault` |
+| **2 hooks FR** | SessionStart (contexte au démarrage) + skill-discovery |
+| **Output style Coach FR** | Mode coach challengeant activable via `/output-style` |
 | **Skills Kepano** *(optionnel)* | CLI Obsidian officiel pour navigation native |
 
 Les skills sont installés à la fois dans le vault et globalement (`~/.claude/skills/`) — tu peux les utiliser depuis n'importe quel dossier.
 
 ---
 
-## Les 6 slash commands
+## Les 8 slash commands
 
 | Commande | Ce qu'elle fait |
 |---|---|
@@ -50,8 +52,12 @@ Les skills sont installés à la fois dans le vault et globalement (`~/.claude/s
 | `/file-intel` | Traite un dossier de fichiers (PDF, DOCX, TXT, MD) via LLM |
 | `/inbox-zero` | Trie automatiquement `inbox/` dans `projects/`, `research/`, etc. |
 | `/memory-add` | Ajoute une mémoire long terme et met à jour l'index `MEMORY.md` |
+| `/humanise` | Nettoie un texte AI-ifié pour restaurer une voix naturelle FR |
+| `/import-vault` | Adopte un vault Obsidian existant sans casser sa structure |
 
 Tape n'importe laquelle dans Claude Code pour la déclencher.
+
+> **Tu as déjà un vault Obsidian ?** Lance `claude` depuis sa racine puis tape `/import-vault` — xais-brain s'installe par-dessus sans casser ta structure existante.
 
 ---
 
@@ -59,18 +65,22 @@ Tape n'importe laquelle dans Claude Code pour la déclencher.
 
 ```
 mon-vault/
-├── CLAUDE.md          ← instructions pour Claude (perso via /vault-setup)
-├── MEMORY.md          ← index de la mémoire long terme
-├── memory/            ← fichiers de mémoire sémantique (user, projects, decisions...)
-├── inbox/             ← nouveaux fichiers en attente de tri
-├── daily/             ← notes journalières (YYYY-MM-DD.md)
-├── projects/          ← projets actifs et briefs
-├── research/          ← notes de recherche, synthèses, idées
-├── archive/           ← travail terminé (jamais supprimé)
-├── scripts/           ← file_intel.py + providers LLM
+├── CLAUDE.md              ← instructions pour Claude (perso via /vault-setup)
+├── MEMORY.md              ← index de la mémoire long terme
+├── vault-config.json      ← source de vérité structurée (nom, provider, mapping)
+├── memory/                ← fichiers de mémoire sémantique (user, projects, decisions...)
+├── inbox/                 ← nouveaux fichiers en attente de tri
+├── daily/                 ← notes journalières (YYYY-MM-DD.md)
+├── projects/              ← projets actifs et briefs
+├── research/              ← notes de recherche, synthèses, idées
+├── archive/               ← travail terminé (jamais supprimé)
+├── scripts/               ← file_intel.py + providers LLM
 └── .claude/
-    ├── skills/        ← les 6 slash commands
-    └── rules/         ← règles avancées (importables dans CLAUDE.md)
+    ├── skills/            ← les 8 slash commands
+    ├── hooks/             ← session-init.sh + skill-discovery.sh
+    ├── output-styles/     ← coach.md (mode coach FR activable)
+    ├── rules/             ← règles avancées (importables dans CLAUDE.md)
+    └── settings.json      ← permissions + déclaration des hooks
 ```
 
 Le **système de mémoire** suit le pattern natif Claude Code : `MEMORY.md` est l'index, `memory/` contient les fichiers détaillés organisés sémantiquement (`user.md`, `projects.md`, `decisions.md`, `learnings.md`, etc.).
@@ -130,6 +140,16 @@ Crée un fichier dans `[ton-vault]/.claude/rules/` puis importe-le dans ton `CLA
 
 Le pattern modulaire garde `CLAUDE.md` léger et charge les règles spécialisées uniquement quand pertinent.
 
+### Activer le mode Coach FR
+
+Un output style `coach.md` est livré par défaut. Pour l'activer dans une session Claude Code :
+
+```
+/output-style
+```
+
+Puis sélectionne **Coach FR**. Claude passera en mode coaching : questions challengeantes, accountability, focus sur l'action plutôt que la planification. Pour revenir au mode normal, re-lance `/output-style` et choisis « default ».
+
 ---
 
 ## Installation manuelle
@@ -155,11 +175,16 @@ python3 -m venv ~/.xais-brain-venv
 ~/.xais-brain-venv/bin/pip install -r requirements.txt
 
 # 3. Vault
-mkdir -p ~/mon-vault/{inbox,daily,projects,research,archive,memory,scripts/providers,.claude/skills,.claude/rules}
+mkdir -p ~/mon-vault/{inbox,daily,projects,research,archive,memory,scripts/providers,.claude/skills,.claude/hooks,.claude/output-styles,.claude/rules}
 cp vault-template/CLAUDE.md ~/mon-vault/
 cp vault-template/MEMORY.md ~/mon-vault/
-cp -r skills/* ~/mon-vault/.claude/skills/
-cp -r skills/* ~/.claude/skills/
+cp vault-template/vault-config.json ~/mon-vault/
+cp -r vault-template/.claude/skills/* ~/mon-vault/.claude/skills/
+cp -r vault-template/.claude/skills/* ~/.claude/skills/
+cp vault-template/.claude/hooks/*.sh ~/mon-vault/.claude/hooks/
+chmod +x ~/mon-vault/.claude/hooks/*.sh
+cp vault-template/.claude/output-styles/coach.md ~/mon-vault/.claude/output-styles/
+cp vault-template/.claude/settings.json ~/mon-vault/.claude/
 cp scripts/file_intel.py ~/mon-vault/scripts/
 cp scripts/providers/* ~/mon-vault/scripts/providers/
 
@@ -184,7 +209,7 @@ cp .env.example ~/mon-vault/.env
 
 ## Contribution
 
-Les PRs sont bienvenues. Pour ajouter une nouvelle skill, suivre la structure de [skills/vault-setup/SKILL.md](skills/vault-setup/SKILL.md) et ouvrir une PR.
+Les PRs sont bienvenues. Pour ajouter une nouvelle skill, suivre la structure de [vault-template/.claude/skills/vault-setup/SKILL.md](vault-template/.claude/skills/vault-setup/SKILL.md) et ouvrir une PR.
 
 Pour signaler un bug : [GitHub Issues](https://github.com/XAISOLUCES/xais-brain/issues).
 

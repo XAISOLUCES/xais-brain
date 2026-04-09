@@ -10,12 +10,13 @@
 ## Structure du vault
 
 ```
-inbox/      ← Nouveaux fichiers non triés. Claude les sortira plus tard.
-daily/      ← Notes journalières (YYYY-MM-DD.md)
-projects/   ← Projets actifs et briefs
-research/   ← Notes de recherche, synthèses, idées sauvegardées
-archive/    ← Travail terminé. Jamais supprimé, juste archivé.
-memory/     ← Mémoire long terme (voir MEMORY.md pour l'index)
+inbox/              ← Nouveaux fichiers non triés. Claude les sortira plus tard.
+daily/              ← Notes journalières (YYYY-MM-DD.md)
+projects/           ← Projets actifs et briefs
+research/           ← Notes de recherche, synthèses, idées sauvegardées
+archive/            ← Travail terminé. Jamais supprimé, juste archivé.
+memory/             ← Mémoire long terme (voir MEMORY.md pour l'index)
+vault-config.json   ← Source de vérité structurée (nom, provider LLM, mapping dossiers)
 ```
 
 ## Règles de chargement de contexte
@@ -44,6 +45,10 @@ memory/     ← Mémoire long terme (voir MEMORY.md pour l'index)
 - `/daily`        — Démarre la journée avec le contexte du vault
 - `/tldr`         — Sauvegarde un résumé de cette session dans le vault
 - `/file-intel`   — Traite n'importe quel dossier de fichiers via LLM, génère des résumés Markdown
+- `/inbox-zero`   — Trie `inbox/` dans les bons dossiers (projects, research, archive…)
+- `/memory-add`   — Ajoute une mémoire long terme et met à jour `MEMORY.md`
+- `/humanise`     — Nettoie un texte AI-ifié pour restaurer une voix naturelle FR
+- `/import-vault` — Adopte un vault Obsidian existant sans casser sa structure
 
 ## Règles avancées
 

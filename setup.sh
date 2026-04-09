@@ -90,7 +90,8 @@ BANNER
   echo -e "  ${PURPLE}Obsidian${RESET}        App de notes free, fichiers Markdown locaux"
   echo -e "  ${PURPLE}Claude Code${RESET}     IA Anthropic en CLI, lit et écrit dans ton vault"
   echo -e "  ${PURPLE}Python deps${RESET}     Libs pour traiter PDFs et docs via LLM"
-  echo -e "  ${PURPLE}6 skills${RESET}        Slash commands FR pour gérer ton vault"
+  echo -e "  ${PURPLE}8 skills${RESET}        Slash commands FR pour gérer ton vault"
+  echo -e "  ${PURPLE}Hooks FR${RESET}        SessionStart + skill-discovery en français"
   echo -e "  ${PURPLE}Skills Kepano${RESET}   CLI Obsidian officiel (optionnel)"
   echo ""
   echo -e "  ${DIM}Rien n'est uploadé. Ton vault reste sur ta machine.${RESET}"
@@ -253,10 +254,18 @@ step5_vault() {
     handle_existing_vault
   fi
 
+  # Migration ancien layout : si $VAULT_PATH/skills/ existe (vieille version)
+  # sans .claude/skills/, on logue un warning et laisse l'user nettoyer manuellement.
+  if [ -d "$VAULT_PATH/skills" ] && [ ! -d "$VAULT_PATH/.claude/skills" ]; then
+    warn "Ancien layout détecté : $VAULT_PATH/skills/"
+    info "Le nouveau layout sera installé dans $VAULT_PATH/.claude/skills/"
+    info "Tu peux supprimer l'ancien dossier quand tu es prêt : rm -rf \"$VAULT_PATH/skills\""
+  fi
+
   # .obsidian/ est obligatoire : sans ce dossier, Obsidian refuse d'ouvrir
   # le path et pop "Vault not found". Vide suffit, Obsidian le remplit au
   # premier lancement (workspace.json, app.json, etc.).
-  mkdir -p "$VAULT_PATH"/{inbox,daily,projects,research,archive,memory,scripts/providers,.claude/skills,.claude/rules,.obsidian}
+  mkdir -p "$VAULT_PATH"/{inbox,daily,projects,research,archive,memory,scripts/providers,.claude/skills,.claude/rules,.claude/hooks,.claude/output-styles,.obsidian}
   copy_vault_template
 
   if [ "$IS_EXISTING_VAULT" = true ]; then
@@ -274,8 +283,9 @@ handle_existing_vault() {
   echo ""
   echo "  Le script va :"
   echo -e "  ${GREEN}+${RESET} Ajouter les dossiers manquants (inbox/, daily/, etc.)"
-  echo -e "  ${GREEN}+${RESET} Installer 6 slash commands"
+  echo -e "  ${GREEN}+${RESET} Installer 8 slash commands + 2 hooks FR"
   echo -e "  ${GREEN}+${RESET} Copier les scripts dans scripts/"
+  echo -e "  ${GREEN}+${RESET} Créer vault-config.json (source de vérité structurée)"
   if [ "$HAS_EXISTING_CLAUDE" = true ]; then
     local preview="CLAUDE.md.backup-$(date +%Y-%m-%d-%H%M%S)"
     echo -e "  ${ORANGE}!${RESET} Backup ton CLAUDE.md actuel → $preview"
@@ -314,6 +324,12 @@ copy_vault_template() {
     safe_cp "$SCRIPT_DIR/vault-template/.claude/rules/README.md" "$VAULT_PATH/.claude/rules/README.md"
   fi
 
+  # vault-config.json : source de vérité structurée. Ne jamais écraser
+  # un existant (step7_llm_config le mergera plus tard).
+  if [ ! -f "$VAULT_PATH/vault-config.json" ]; then
+    safe_cp "$SCRIPT_DIR/vault-template/vault-config.json" "$VAULT_PATH/vault-config.json"
+  fi
+
   # Scripts Python (orchestrateur + providers)
   safe_cp "$SCRIPT_DIR/scripts/file_intel.py" "$VAULT_PATH/scripts/file_intel.py"
   for f in __init__.py base.py _prompts.py gemini_provider.py claude_provider.py openai_provider.py; do
@@ -323,22 +339,44 @@ copy_vault_template() {
 
 # === Étape 6 : Skills install ================================================
 step6_skills() {
-  step 6 "Installation des slash commands"
+  step 6 "Installation des slash commands, hooks et output-styles"
 
-  local skills=(vault-setup daily tldr file-intel inbox-zero memory-add)
+  local skills=(vault-setup daily tldr file-intel inbox-zero memory-add humanise import-vault)
+  local src="$SCRIPT_DIR/vault-template/.claude/skills"
 
   for skill in "${skills[@]}"; do
     # Vault local
     mkdir -p "$VAULT_PATH/.claude/skills/$skill"
-    safe_cp "$SCRIPT_DIR/skills/$skill/SKILL.md" "$VAULT_PATH/.claude/skills/$skill/SKILL.md"
+    safe_cp "$src/$skill/SKILL.md" "$VAULT_PATH/.claude/skills/$skill/SKILL.md"
 
     # Global (utilisable depuis n'importe quel dossier)
     mkdir -p "$HOME/.claude/skills/$skill"
-    safe_cp "$SCRIPT_DIR/skills/$skill/SKILL.md" "$HOME/.claude/skills/$skill/SKILL.md"
+    safe_cp "$src/$skill/SKILL.md" "$HOME/.claude/skills/$skill/SKILL.md"
   done
 
   ok "${#skills[@]} skills installés dans le vault"
   ok "${#skills[@]} skills installés globalement (~/.claude/skills/)"
+
+  # Hooks FR : session-init + skill-discovery
+  mkdir -p "$VAULT_PATH/.claude/hooks"
+  for hook in session-init.sh skill-discovery.sh; do
+    safe_cp "$SCRIPT_DIR/vault-template/.claude/hooks/$hook" "$VAULT_PATH/.claude/hooks/$hook"
+    chmod +x "$VAULT_PATH/.claude/hooks/$hook" 2>/dev/null || true
+  done
+  ok "2 hooks FR installés (session-init, skill-discovery)"
+
+  # Output style Coach FR
+  mkdir -p "$VAULT_PATH/.claude/output-styles"
+  safe_cp "$SCRIPT_DIR/vault-template/.claude/output-styles/coach.md" "$VAULT_PATH/.claude/output-styles/coach.md"
+  ok "Output style Coach FR installé"
+
+  # settings.json du vault : on ne l'écrase jamais si l'user l'a modifié
+  if [ ! -f "$VAULT_PATH/.claude/settings.json" ]; then
+    safe_cp "$SCRIPT_DIR/vault-template/.claude/settings.json" "$VAULT_PATH/.claude/settings.json"
+    ok "settings.json installé (permissions + hooks déclarés)"
+  else
+    info "settings.json existant préservé"
+  fi
 }
 
 # === Étape 7 : LLM config ====================================================
@@ -404,6 +442,41 @@ step7_llm_config() {
     printf '%s=%s\n' "$key_var" "$API_KEY"
   } > "$VAULT_PATH/.env"
 
+  # Merge le provider dans vault-config.json (source de vérité structurée)
+  if command -v python3 &>/dev/null; then
+    python3 - "$VAULT_PATH" "$llm_name" <<'PYEOF' 2>/dev/null || true
+import json, sys, os
+from datetime import date
+vault, provider = sys.argv[1], sys.argv[2]
+cfg_path = os.path.join(vault, "vault-config.json")
+try:
+    with open(cfg_path) as f:
+        cfg = json.load(f)
+except (FileNotFoundError, json.JSONDecodeError):
+    cfg = {
+        "version": "0.2",
+        "folders": {
+            "inbox": "inbox", "daily": "daily", "projects": "projects",
+            "research": "research", "archive": "archive", "memory": "memory"
+        },
+        "preferences": {"coachMode": False, "autoCommit": False},
+        "adoptedVault": False,
+    }
+cfg.setdefault("user", {"name": None, "workMode": None})
+cfg.setdefault("folders", {
+    "inbox": "inbox", "daily": "daily", "projects": "projects",
+    "research": "research", "archive": "archive", "memory": "memory"
+})
+cfg.setdefault("preferences", {"coachMode": False, "autoCommit": False})
+cfg["llm"] = {"provider": provider, "model": cfg.get("llm", {}).get("model")}
+# setupDate uniquement si absent (preserve l'existant à chaque relance)
+if not cfg.get("setupDate"):
+    cfg["setupDate"] = date.today().isoformat()
+with open(cfg_path, "w") as f:
+    json.dump(cfg, f, indent=2)
+PYEOF
+  fi
+
   if [ -n "$API_KEY" ]; then
     ok "LLM configuré : $llm_name (clé sauvegardée, masquée)"
   else
@@ -455,7 +528,7 @@ step9_kepano() {
   echo "  Kepano (Steph Ango), CEO d'Obsidian, publie des skills officiels"
   echo "  qui apprennent à Claude Code à naviguer dans ton vault via le CLI."
   echo ""
-  info "Slash commands ajoutés : obsidian-cli, obsidian-markdown, obsidian-bases, json-canvas"
+  info "Slash commands ajoutés : obsidian-cli, obsidian-markdown, obsidian-bases, json-canvas, defuddle"
   info "(commandes de lecture seule — rien n'est envoyé ailleurs)"
   echo ""
   read -rp "  Installer les skills Kepano ? [O/n] : " ANSWER
@@ -519,9 +592,23 @@ verify_install() {
     err "Fichiers du vault manquants à $VAULT_PATH"
   fi
 
+  if [ -f "$VAULT_PATH/vault-config.json" ]; then
+    ok "vault-config.json"
+  else
+    warn "vault-config.json absent"
+  fi
+
   local skill_count
   skill_count="$(find "$VAULT_PATH/.claude/skills" -maxdepth 1 -type d 2>/dev/null | tail -n +2 | wc -l | tr -d ' ')"
   ok "$skill_count skills installés"
+
+  local hook_count
+  hook_count="$(find "$VAULT_PATH/.claude/hooks" -maxdepth 1 -type f -name '*.sh' 2>/dev/null | wc -l | tr -d ' ')"
+  if [ "${hook_count:-0}" -ge 2 ] 2>/dev/null; then
+    ok "$hook_count hooks FR installés"
+  else
+    warn "Hooks FR manquants"
+  fi
 }
 
 # === Avertissements ==========================================================
@@ -554,8 +641,11 @@ print_done() {
   fi
   echo ""
   echo -e "  ${WHITE}Ce que tu obtiens :${RESET}"
-  echo "  - 6 slash commands : /vault-setup /daily /tldr /file-intel /inbox-zero /memory-add"
+  echo "  - 8 slash commands : /vault-setup /daily /tldr /file-intel /inbox-zero /memory-add /humanise /import-vault"
+  echo "  - 2 hooks FR : session-init (contexte au démarrage) + skill-discovery"
+  echo "  - Output style : Coach FR (tape /output-style pour l'activer)"
   echo "  - CLAUDE.md template (perso via /vault-setup)"
+  echo "  - vault-config.json (source de vérité structurée)"
   echo "  - Système de mémoire indexé (MEMORY.md + memory/)"
   echo "  - Scripts Python multi-LLM (Gemini/Claude/OpenAI)"
   if [ "${IS_EXISTING_VAULT:-false}" = true ] && [ "${HAS_EXISTING_CLAUDE:-false}" = true ]; then
