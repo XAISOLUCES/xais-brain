@@ -1,6 +1,9 @@
 ---
 name: memory-add
 description: Ajoute une nouvelle entrée au système de mémoire long terme du vault et met à jour l'index MEMORY.md automatiquement. Utiliser quand l'utilisateur dit memory-add, ajoute à la mémoire, retiens ça, sauvegarde ce souvenir, ou veut capturer une décision/leçon importante.
+user-invocable: true
+disable-model-invocation: false
+model: sonnet
 ---
 
 # memory-add

@@ -1,6 +1,9 @@
 ---
 name: vault-setup
 description: Personnalise le vault Obsidian en interviewant l'utilisateur sur son rôle, ses projets et ses objectifs, puis met à jour CLAUDE.md. Utiliser quand l'utilisateur dit vault-setup, personnalise mon vault, configure mon vault, ou ouvre un vault frais.
+user-invocable: true
+disable-model-invocation: false
+model: sonnet
 ---
 
 # vault-setup

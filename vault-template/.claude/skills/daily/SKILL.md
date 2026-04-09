@@ -1,6 +1,9 @@
 ---
 name: daily
 description: Démarre la journée avec le contexte du vault — lit ou crée la note du jour, surface les priorités, vérifie l'inbox. Utiliser quand l'utilisateur dit daily, démarrer la journée, on commence, bonjour, ou en début de session.
+user-invocable: true
+disable-model-invocation: false
+model: haiku
 ---
 
 # daily

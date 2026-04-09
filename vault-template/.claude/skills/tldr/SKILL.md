@@ -1,6 +1,9 @@
 ---
 name: tldr
 description: Sauvegarde un résumé de la session courante dans le vault — décisions clés, choses à retenir, prochaines actions. Choisit automatiquement le bon dossier de destination. Utiliser quand l'utilisateur dit tldr, résume cette session, sauvegarde, ou en fin de conversation.
+user-invocable: true
+disable-model-invocation: false
+model: haiku
 ---
 
 # tldr

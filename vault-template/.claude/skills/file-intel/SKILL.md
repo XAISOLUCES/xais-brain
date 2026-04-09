@@ -1,6 +1,9 @@
 ---
 name: file-intel
 description: Traite n'importe quel dossier de fichiers (PDF, PPTX, XLSX, DOCX, CSV, JSON, texte) via LLM et génère des résumés Markdown prêts pour Obsidian. Utiliser quand l'utilisateur dit file-intel, résume ce dossier, traite ces fichiers, ou veut digérer des PDFs.
+user-invocable: true
+disable-model-invocation: false
+model: sonnet
 ---
 
 # file-intel

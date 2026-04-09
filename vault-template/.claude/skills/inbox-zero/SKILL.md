@@ -1,6 +1,9 @@
 ---
 name: inbox-zero
 description: Trie automatiquement le contenu de inbox/ dans les bons dossiers du vault (projects, research, daily, archive, memory). Utiliser quand l'utilisateur dit inbox-zero, trie l'inbox, range mes fichiers, ou vide ma boîte de réception.
+user-invocable: true
+disable-model-invocation: false
+model: sonnet
 ---
 
 # inbox-zero
