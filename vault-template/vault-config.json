@@ -1,0 +1,25 @@
+{
+  "version": "0.2",
+  "setupDate": null,
+  "user": {
+    "name": null,
+    "workMode": null
+  },
+  "llm": {
+    "provider": "gemini",
+    "model": null
+  },
+  "folders": {
+    "inbox": "inbox",
+    "daily": "daily",
+    "projects": "projects",
+    "research": "research",
+    "archive": "archive",
+    "memory": "memory"
+  },
+  "preferences": {
+    "coachMode": false,
+    "autoCommit": false
+  },
+  "adoptedVault": false
+}
