@@ -1,0 +1,53 @@
+{
+  "permissions": {
+    "allow": [
+      "Read",
+      "Write(inbox/**)",
+      "Write(daily/**)",
+      "Write(projects/**)",
+      "Write(research/**)",
+      "Write(archive/**)",
+      "Write(memory/**)",
+      "Edit(inbox/**)",
+      "Edit(daily/**)",
+      "Edit(projects/**)",
+      "Edit(research/**)",
+      "Edit(memory/**)",
+      "Edit(CLAUDE.md)",
+      "Edit(MEMORY.md)",
+      "Edit(vault-config.json)",
+      "Glob",
+      "Grep",
+      "Bash(ls:*)",
+      "Bash(date:*)",
+      "Bash(find:*)",
+      "Bash(git:*)",
+      "Bash(python3:*)",
+      "Bash(~/.xais-brain-venv/bin/python3:*)"
+    ],
+    "deny": [
+      "Edit(.claude/**)",
+      "Write(.git/**)",
+      "Bash(rm -rf:*)"
+    ]
+  },
+  "env": {
+    "VAULT_PATH": "${cwd}"
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          { "type": "command", "command": ".claude/hooks/session-init.sh" }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          { "type": "command", "command": ".claude/hooks/skill-discovery.sh", "timeout": 5000 }
+        ]
+      }
+    ]
+  }
+}
