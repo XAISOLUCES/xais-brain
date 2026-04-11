@@ -33,7 +33,7 @@ Une seule commande, ~3 minutes. Le script t'interroge sur :
 | **Obsidian** | App de notes locale, fichiers Markdown |
 | **Claude Code CLI** | L'IA qui lit et écrit dans ton vault |
 | **Python venv** (`~/.xais-brain-venv/`) | Isolé du système, pas de pollution |
-| **8 slash commands** | `/vault-setup` `/daily` `/tldr` `/file-intel` `/inbox-zero` `/memory-add` `/humanise` `/import-vault` |
+| **10 slash commands** | `/vault-setup` `/daily` `/tldr` `/file-intel` `/inbox-zero` `/memory-add` `/humanise` `/import-vault` `/project` `/client` |
 | **2 hooks FR** | SessionStart (contexte au démarrage) + skill-discovery |
 | **Output style Coach FR** | Mode coach challengeant activable via `/output-style` |
 | **Skills Kepano** *(optionnel)* | CLI Obsidian officiel pour navigation native |
@@ -42,7 +42,7 @@ Les skills sont installés à la fois dans le vault et globalement (`~/.claude/s
 
 ---
 
-## Les 8 slash commands
+## Les 10 slash commands
 
 | Commande | Ce qu'elle fait |
 |---|---|
@@ -54,6 +54,8 @@ Les skills sont installés à la fois dans le vault et globalement (`~/.claude/s
 | `/memory-add` | Ajoute une mémoire long terme et met à jour l'index `MEMORY.md` |
 | `/humanise` | Nettoie un texte AI-ifié pour restaurer une voix naturelle FR |
 | `/import-vault` | Adopte un vault Obsidian existant sans casser sa structure |
+| `/project` | Charge le contexte complet d'un side-project (`projects/[nom]/`) |
+| `/client` | Charge le contexte complet d'un client en prod (`clients/[nom]/`) |
 
 Tape n'importe laquelle dans Claude Code pour la déclencher.
 

@@ -49,6 +49,8 @@ vault-config.json   ← Source de vérité structurée (nom, provider LLM, mappi
 - `/memory-add`   — Ajoute une mémoire long terme et met à jour `MEMORY.md`
 - `/humanise`     — Nettoie un texte AI-ifié pour restaurer une voix naturelle FR
 - `/import-vault` — Adopte un vault Obsidian existant sans casser sa structure
+- `/project`      — Charge le contexte complet d'un side-project (projects/[nom]/)
+- `/client`       — Charge le contexte complet d'un client en prod (clients/[nom]/)
 
 ## Règles avancées
 

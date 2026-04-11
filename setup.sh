@@ -90,7 +90,7 @@ BANNER
   echo -e "  ${PURPLE}Obsidian${RESET}        App de notes free, fichiers Markdown locaux"
   echo -e "  ${PURPLE}Claude Code${RESET}     IA Anthropic en CLI, lit et écrit dans ton vault"
   echo -e "  ${PURPLE}Python deps${RESET}     Libs pour traiter PDFs et docs via LLM"
-  echo -e "  ${PURPLE}8 skills${RESET}        Slash commands FR pour gérer ton vault"
+  echo -e "  ${PURPLE}10 skills${RESET}       Slash commands FR pour gérer ton vault"
   echo -e "  ${PURPLE}Hooks FR${RESET}        SessionStart + skill-discovery en français"
   echo -e "  ${PURPLE}Skills Kepano${RESET}   CLI Obsidian officiel (optionnel)"
   echo ""
@@ -341,7 +341,7 @@ copy_vault_template() {
 step6_skills() {
   step 6 "Installation des slash commands, hooks et output-styles"
 
-  local skills=(vault-setup daily tldr file-intel inbox-zero memory-add humanise import-vault)
+  local skills=(vault-setup daily tldr file-intel inbox-zero memory-add humanise import-vault client project)
   local src="$SCRIPT_DIR/vault-template/.claude/skills"
 
   for skill in "${skills[@]}"; do
