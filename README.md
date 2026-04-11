@@ -34,9 +34,10 @@ Une seule commande, ~3 minutes. Le script t'interroge sur :
 | **Claude Code CLI** | L'IA qui lit et écrit dans ton vault |
 | **Python venv** (`~/.xais-brain-venv/`) | Isolé du système, pas de pollution |
 | **10 slash commands** | `/vault-setup` `/daily` `/tldr` `/file-intel` `/inbox-zero` `/memory-add` `/humanise` `/import-vault` `/project` `/client` |
-| **2 hooks FR** | SessionStart (contexte au démarrage) + skill-discovery |
+| **2 hooks FR** | SessionStart (contexte vault au démarrage) + UserPromptSubmit (liste les skills sur trigger FR) |
 | **Output style Coach FR** | Mode coach challengeant activable via `/output-style` |
-| **Skills Kepano** *(optionnel)* | CLI Obsidian officiel pour navigation native |
+| **Permissions cadrées** | `settings.json` : écritures scopées aux dossiers du vault, `.git/` et `.claude/` protégés, `rm -rf` refusé |
+| **Skills Kepano** *(optionnel)* | `obsidian-cli` `obsidian-markdown` `obsidian-bases` `json-canvas` `defuddle` |
 
 Les skills sont installés à la fois dans le vault et globalement (`~/.claude/skills/`) — tu peux les utiliser depuis n'importe quel dossier.
 
@@ -69,16 +70,19 @@ Tape n'importe laquelle dans Claude Code pour la déclencher.
 mon-vault/
 ├── CLAUDE.md              ← instructions pour Claude (perso via /vault-setup)
 ├── MEMORY.md              ← index de la mémoire long terme
-├── vault-config.json      ← source de vérité structurée (nom, provider, mapping)
+├── vault-config.json      ← source de vérité structurée (user, llm, folders)
+├── .env                   ← clés API LLM (gitignoré)
 ├── memory/                ← fichiers de mémoire sémantique (user, projects, decisions...)
 ├── inbox/                 ← nouveaux fichiers en attente de tri
 ├── daily/                 ← notes journalières (YYYY-MM-DD.md)
 ├── projects/              ← projets actifs et briefs
 ├── research/              ← notes de recherche, synthèses, idées
 ├── archive/               ← travail terminé (jamais supprimé)
-├── scripts/               ← file_intel.py + providers LLM
+├── scripts/
+│   ├── file_intel.py      ← extracteurs PDF/DOCX/TXT/MD + orchestrateur
+│   └── providers/         ← gemini, claude, openai (interface commune)
 └── .claude/
-    ├── skills/            ← les 8 slash commands
+    ├── skills/            ← les 10 slash commands (+ Kepano si activé)
     ├── hooks/             ← session-init.sh + skill-discovery.sh
     ├── output-styles/     ← coach.md (mode coach FR activable)
     ├── rules/             ← règles avancées (importables dans CLAUDE.md)
@@ -86,6 +90,8 @@ mon-vault/
 ```
 
 Le **système de mémoire** suit le pattern natif Claude Code : `MEMORY.md` est l'index, `memory/` contient les fichiers détaillés organisés sémantiquement (`user.md`, `projects.md`, `decisions.md`, `learnings.md`, etc.).
+
+Pour l'arborescence complète du repo (code source) et les diagrammes ASCII de flux, voir [ARCHITECTURE.md](ARCHITECTURE.md).
 
 ---
 
@@ -113,6 +119,25 @@ Changer de provider = modifier une ligne dans `.env`. Aucun code à toucher.
 
 ---
 
+## Hooks et permissions
+
+Deux hooks tournent automatiquement dans chaque vault xais-brain.
+
+**`SessionStart` → `.claude/hooks/session-init.sh`**
+S'exécute au lancement de Claude Code. Affiche en 3 lignes max : nom du vault, date du jour, fichiers en attente dans `inbox/`, et signale si la note daily du jour n'existe pas. Lit `vault-config.json` pour résoudre les noms de dossiers (utile si tu as remappé `projects/` → `clients/` via `/import-vault`).
+
+**`UserPromptSubmit` → `.claude/hooks/skill-discovery.sh`**
+S'exécute à chaque message envoyé à Claude. Si ton message contient un mot-clé FR (`skill`, `commandes`, `que peux-tu`, `aide-moi`, `quoi faire`, `slash`), liste automatiquement les slash commands disponibles avec leur description. Sinon : silencieux.
+
+**Permissions par défaut (`.claude/settings.json`)**
+- ✅ Écriture autorisée dans : `inbox/`, `daily/`, `projects/`, `research/`, `archive/`, `memory/`, `CLAUDE.md`, `MEMORY.md`, `vault-config.json`
+- ✅ Bash limité à : `ls`, `date`, `find`, `git`, `python3`, `~/.xais-brain-venv/bin/python3`
+- ❌ Refusé : `Edit(.claude/**)`, `Write(.git/**)`, `Bash(rm -rf:*)`
+
+Tu peux étendre ou restreindre ces permissions en éditant `.claude/settings.json` à la main.
+
+---
+
 ## Personnalisation
 
 ### Ajouter ta propre skill
@@ -122,7 +147,10 @@ mkdir -p ~/.claude/skills/ma-commande
 cat > ~/.claude/skills/ma-commande/SKILL.md << 'EOF'
 ---
 name: ma-commande
-description: Ce que fait ma commande, et quand l'utiliser.
+description: Ce que fait ma commande, et quand l'utiliser. Mentionne les mots-clés FR qui doivent la déclencher (ex. "mots-clés magiques").
+user-invocable: true
+disable-model-invocation: false
+model: haiku
 ---
 
 # ma-commande
@@ -130,6 +158,12 @@ description: Ce que fait ma commande, et quand l'utiliser.
 [Instructions pour Claude quand cette commande est appelée]
 EOF
 ```
+
+| Champ frontmatter | Rôle |
+|---|---|
+| `user-invocable` | `true` rend la skill disponible via slash command (`/ma-commande`) |
+| `disable-model-invocation` | `false` autorise Claude à la déclencher seul si la description matche |
+| `model` | `haiku` (rapide, lectures simples) ou `sonnet` (raisonnement, transformations) |
 
 ### Ajouter des règles avancées
 
@@ -150,7 +184,7 @@ Un output style `coach.md` est livré par défaut. Pour l'activer dans une sessi
 /output-style
 ```
 
-Puis sélectionne **Coach FR**. Claude passera en mode coaching : questions challengeantes, accountability, focus sur l'action plutôt que la planification. Pour revenir au mode normal, re-lance `/output-style` et choisis « default ».
+Puis sélectionne **Coach FR**. Claude passera en mode coaching : questions challengeantes, accountability, focus sur l'action plutôt que la planification. Chaque réponse se termine **obligatoirement** par une action faisable dans l'heure et une question d'accountability — pas d'exception. Pour revenir au mode normal, re-lance `/output-style` et choisis « default ».
 
 ---
 
