@@ -1,6 +1,6 @@
 ---
 name: file-intel
-description: Traite n'importe quel dossier de fichiers (PDF, PPTX, XLSX, DOCX, CSV, JSON, texte) via LLM et génère des résumés Markdown prêts pour Obsidian. Utiliser quand l'utilisateur dit file-intel, résume ce dossier, traite ces fichiers, ou veut digérer des PDFs.
+description: Traite un dossier de fichiers (PDF, DOCX, TXT, MD) via LLM et génère des résumés Markdown prêts pour Obsidian. Utiliser quand l'utilisateur dit file-intel, résume ce dossier, traite ces fichiers, ou veut digérer des PDFs.
 user-invocable: true
 disable-model-invocation: false
 model: sonnet
@@ -41,7 +41,7 @@ Si la clé manque → expliquer comment l'obtenir et stopper.
 
 Le script :
 
-- Lit chaque fichier du dossier (PDF, PPTX, XLSX, DOCX, CSV, JSON, txt, md)
+- Lit chaque fichier du dossier (PDF, DOCX, TXT, MD)
 - Envoie au LLM configuré via `LLM_PROVIDER`
 - Génère un fichier Markdown par source dans `inbox/`
 - Frontmatter automatique avec source, date, tags
@@ -57,5 +57,5 @@ Une fois terminé :
 
 - **Clé API manquante** → guider vers `.env` et l'URL d'obtention
 - **venv pas trouvé** → relancer `setup.sh`
-- **Aucun fichier supporté** → lister les extensions supportées (pdf, pptx, xlsx, docx, csv, json, txt, md)
+- **Aucun fichier supporté** → lister les extensions supportées (pdf, docx, txt, md)
 - **Quota LLM atteint** → suggérer de changer `LLM_PROVIDER` dans `.env`

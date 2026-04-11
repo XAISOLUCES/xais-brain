@@ -283,7 +283,7 @@ handle_existing_vault() {
   echo ""
   echo "  Le script va :"
   echo -e "  ${GREEN}+${RESET} Ajouter les dossiers manquants (inbox/, daily/, etc.)"
-  echo -e "  ${GREEN}+${RESET} Installer 8 slash commands + 2 hooks FR"
+  echo -e "  ${GREEN}+${RESET} Installer 10 slash commands + 2 hooks FR"
   echo -e "  ${GREEN}+${RESET} Copier les scripts dans scripts/"
   echo -e "  ${GREEN}+${RESET} Créer vault-config.json (source de vérité structurée)"
   if [ "$HAS_EXISTING_CLAUDE" = true ]; then
@@ -641,7 +641,7 @@ print_done() {
   fi
   echo ""
   echo -e "  ${WHITE}Ce que tu obtiens :${RESET}"
-  echo "  - 8 slash commands : /vault-setup /daily /tldr /file-intel /inbox-zero /memory-add /humanise /import-vault"
+  echo "  - 10 slash commands : /vault-setup /daily /tldr /file-intel /inbox-zero /memory-add /humanise /import-vault /project /client"
   echo "  - 2 hooks FR : session-init (contexte au démarrage) + skill-discovery"
   echo "  - Output style : Coach FR (tape /output-style pour l'activer)"
   echo "  - CLAUDE.md template (perso via /vault-setup)"
