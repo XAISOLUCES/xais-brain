@@ -1,0 +1,77 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Python deps
+        run: |
+          python3 -m venv ~/.xais-brain-venv
+          ~/.xais-brain-venv/bin/pip install -r requirements.txt
+
+      - name: Run setup.sh (non-interactive)
+        env:
+          XAIS_BRAIN_CI: "true"
+          XAIS_BRAIN_VAULT_PATH: /tmp/xais-brain-ci
+          XAIS_BRAIN_LLM_PROVIDER: "4"
+          XAIS_BRAIN_IMPORT_FOLDER: ""
+          XAIS_BRAIN_KEPANO: "n"
+        run: bash setup.sh
+
+      - name: Run integration tests
+        env:
+          XAIS_BRAIN_CI: "true"
+          XAIS_BRAIN_VAULT_PATH: /tmp/xais-brain-ci
+          XAIS_BRAIN_LLM_PROVIDER: "4"
+          XAIS_BRAIN_IMPORT_FOLDER: ""
+          XAIS_BRAIN_KEPANO: "n"
+        run: bash tests/test_setup.sh
+
+      - name: Run Python unit tests
+        run: |
+          ~/.xais-brain-venv/bin/pip install pytest
+          ~/.xais-brain-venv/bin/pytest tests/test_file_intel.py -v
+
+  test-linux:
+    runs-on: ubuntu-latest
+    # Le support Linux est partiel — on laisse passer les erreurs pour l'instant
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Python deps
+        run: |
+          python3 -m venv ~/.xais-brain-venv
+          ~/.xais-brain-venv/bin/pip install -r requirements.txt
+
+      - name: Run setup.sh (non-interactive, Linux)
+        env:
+          XAIS_BRAIN_CI: "true"
+          XAIS_BRAIN_VAULT_PATH: /tmp/xais-brain-ci
+          XAIS_BRAIN_LLM_PROVIDER: "4"
+          XAIS_BRAIN_IMPORT_FOLDER: ""
+          XAIS_BRAIN_KEPANO: "n"
+        run: bash setup.sh
+
+      - name: Run Python unit tests
+        run: |
+          ~/.xais-brain-venv/bin/pip install pytest
+          ~/.xais-brain-venv/bin/pytest tests/test_file_intel.py -v

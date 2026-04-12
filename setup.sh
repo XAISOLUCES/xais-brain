@@ -10,7 +10,12 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd || echo
 VENV_DIR="$HOME/.xais-brain-venv"
 REPO_URL="https://github.com/XAISOLUCES/xais-brain.git"
 DEFAULT_VAULT="$HOME/xais-brain-vault"
-NUM_STEPS=9
+NUM_STEPS=10
+
+# === Mode CI / non-interactif ================================================
+# Si XAIS_BRAIN_CI=true (ou CI=true), tous les read -rp sont bypassés avec des
+# valeurs par défaut ou des variables d'env dédiées.
+IS_CI="${XAIS_BRAIN_CI:-${CI:-false}}"
 
 # === Couleurs ================================================================
 PURPLE='\033[0;35m'
@@ -69,6 +74,10 @@ cleanup_bootstrap() {
 
 # === Bannière ================================================================
 show_banner() {
+  if [ "$IS_CI" = "true" ]; then
+    info "CI mode — skip bannière"
+    return 0
+  fi
   clear
   echo ""
   echo -e "${PURPLE}"
@@ -103,6 +112,10 @@ BANNER
 # === OS check ================================================================
 check_os() {
   if [[ "$OSTYPE" != "darwin"* ]]; then
+    if [ "$IS_CI" = "true" ]; then
+      warn "OS non-macOS détecté ($OSTYPE) — certaines étapes seront skippées en CI"
+      return 0
+    fi
     err "Ce script est macOS uniquement."
     info "Pour Linux/Windows, voir le README."
     exit 1
@@ -112,7 +125,15 @@ check_os() {
 # === Étape 1 : Homebrew ======================================================
 step1_brew() {
   step 1 "Vérification de Homebrew"
+  if [ "$IS_CI" = "true" ] && [[ "$OSTYPE" != "darwin"* ]]; then
+    info "CI mode (non-macOS) — skip Homebrew"
+    return 0
+  fi
   if ! command -v brew &>/dev/null; then
+    if [ "$IS_CI" = "true" ]; then
+      info "CI mode — skip installation Homebrew"
+      return 0
+    fi
     echo "  Installation de Homebrew..."
     /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
     ok "Homebrew installé"
@@ -124,6 +145,11 @@ step1_brew() {
 # === Étape 2 : Obsidian (avec fix --adopt) ===================================
 step2_obsidian() {
   step 2 "Installation d'Obsidian"
+
+  if [ "$IS_CI" = "true" ]; then
+    info "CI mode — skip installation Obsidian"
+    return 0
+  fi
 
   if brew list --cask obsidian &>/dev/null 2>&1; then
     ok "Obsidian déjà installé via Homebrew"
@@ -151,6 +177,11 @@ step2_obsidian() {
 # === Étape 3 : Claude Code CLI ===============================================
 step3_claude_code() {
   step 3 "Installation de Claude Code CLI"
+
+  if [ "$IS_CI" = "true" ]; then
+    info "CI mode — skip installation Claude Code"
+    return 0
+  fi
 
   if command -v claude &>/dev/null; then
     ok "Claude Code déjà installé"
@@ -213,12 +244,18 @@ step4_python_deps() {
 # === Étape 5 : Vault setup ===================================================
 step5_vault() {
   step 5 "Configuration du vault"
-  echo ""
-  echo "  Où veux-tu installer ton second cerveau ?"
-  info "Appuie sur Entrée pour le défaut : ~/xais-brain-vault"
-  info "(ex: ~/Documents/MyVault, /Users/toi/Notes)"
-  read -rp "  Chemin du vault : " VAULT_PATH
-  VAULT_PATH="${VAULT_PATH:-$DEFAULT_VAULT}"
+
+  if [ "$IS_CI" = "true" ] && [ -n "${XAIS_BRAIN_VAULT_PATH:-}" ]; then
+    VAULT_PATH="$XAIS_BRAIN_VAULT_PATH"
+    info "CI mode — vault path : $VAULT_PATH"
+  else
+    echo ""
+    echo "  Où veux-tu installer ton second cerveau ?"
+    info "Appuie sur Entrée pour le défaut : ~/xais-brain-vault"
+    info "(ex: ~/Documents/MyVault, /Users/toi/Notes)"
+    read -rp "  Chemin du vault : " VAULT_PATH
+    VAULT_PATH="${VAULT_PATH:-$DEFAULT_VAULT}"
+  fi
   VAULT_PATH="${VAULT_PATH/#\~/$HOME}"
   [ "${#VAULT_PATH}" -gt 1 ] && VAULT_PATH="${VAULT_PATH%/}"
 
@@ -296,8 +333,13 @@ handle_existing_vault() {
   echo "  - Tes notes existantes (dans inbox/, daily/, projects/, etc.)"
   echo "  - Tes plugins, thèmes, settings Obsidian (.obsidian/)"
   echo ""
-  read -rp "  Continuer ? [O/n] : " ANSWER
-  ANSWER="${ANSWER:-O}"
+  if [ "$IS_CI" = "true" ]; then
+    ANSWER="${XAIS_BRAIN_EXISTING_VAULT:-O}"
+    info "CI mode — auto-réponse vault existant : $ANSWER"
+  else
+    read -rp "  Continuer ? [O/n] : " ANSWER
+    ANSWER="${ANSWER:-O}"
+  fi
   if [[ ! "$ANSWER" =~ ^[OoYy] ]]; then
     info "Installation annulée. Ton vault est intact."
     exit 0
@@ -382,19 +424,25 @@ step6_skills() {
 # === Étape 7 : LLM config ====================================================
 step7_llm_config() {
   step 7 "Configuration du LLM pour file-intel"
-  echo ""
-  echo "  Quel LLM veux-tu utiliser pour traiter tes fichiers ?"
-  echo ""
-  echo "  1) Gemini  — quota gratuit (selon dispo Google AI Studio)"
-  echo -e "             ${DIM}https://aistudio.google.com/apikey${RESET}"
-  echo "  2) Claude  — payant, qualité supérieure"
-  echo -e "             ${DIM}https://console.anthropic.com/${RESET}"
-  echo "  3) OpenAI  — payant"
-  echo -e "             ${DIM}https://platform.openai.com/api-keys${RESET}"
-  echo "  4) Skip    — configurer plus tard dans .env"
-  echo ""
-  read -rp "  Choix [1-4] (défaut 1) : " LLM_CHOICE
-  LLM_CHOICE="${LLM_CHOICE:-1}"
+
+  if [ "$IS_CI" = "true" ]; then
+    LLM_CHOICE="${XAIS_BRAIN_LLM_PROVIDER:-4}"
+    info "CI mode — LLM provider : $LLM_CHOICE"
+  else
+    echo ""
+    echo "  Quel LLM veux-tu utiliser pour traiter tes fichiers ?"
+    echo ""
+    echo "  1) Gemini  — quota gratuit (selon dispo Google AI Studio)"
+    echo -e "             ${DIM}https://aistudio.google.com/apikey${RESET}"
+    echo "  2) Claude  — payant, qualité supérieure"
+    echo -e "             ${DIM}https://console.anthropic.com/${RESET}"
+    echo "  3) OpenAI  — payant"
+    echo -e "             ${DIM}https://platform.openai.com/api-keys${RESET}"
+    echo "  4) Skip    — configurer plus tard dans .env"
+    echo ""
+    read -rp "  Choix [1-4] (défaut 1) : " LLM_CHOICE
+    LLM_CHOICE="${LLM_CHOICE:-1}"
+  fi
 
   local llm_name key_var key_url
   case "$LLM_CHOICE" in
@@ -426,12 +474,17 @@ step7_llm_config() {
       ;;
   esac
 
-  echo ""
-  echo -e "  ${CYAN}Récupère ta clé ici : $key_url${RESET}"
-  info "Ta clé sera invisible pendant la saisie. C'est normal."
-  echo ""
-  read -rsp "  Colle ta clé $key_var (ou Entrée pour skip) : " API_KEY
-  echo ""
+  if [ "$IS_CI" = "true" ]; then
+    API_KEY=""
+    info "CI mode — skip saisie clé API"
+  else
+    echo ""
+    echo -e "  ${CYAN}Récupère ta clé ici : $key_url${RESET}"
+    info "Ta clé sera invisible pendant la saisie. C'est normal."
+    echo ""
+    read -rsp "  Colle ta clé $key_var (ou Entrée pour skip) : " API_KEY
+    echo ""
+  fi
 
   # Trim whitespace (le copier-coller ajoute parfois des espaces)
   API_KEY="$(echo "$API_KEY" | tr -d '[:space:]')"
@@ -487,11 +540,17 @@ PYEOF
 # === Étape 8 : Import fichiers ===============================================
 step8_import() {
   step 8 "Import de fichiers existants (optionnel)"
-  echo ""
-  echo "  As-tu un dossier de fichiers à importer ? (PDFs, Word, etc.)"
-  info "Le LLM configuré va les synthétiser en notes Markdown dans inbox/"
-  echo ""
-  read -rp "  Chemin du dossier (ou Entrée pour skip) : " IMPORT_FOLDER
+
+  if [ "$IS_CI" = "true" ]; then
+    IMPORT_FOLDER="${XAIS_BRAIN_IMPORT_FOLDER:-}"
+    info "CI mode — import folder : '${IMPORT_FOLDER:-skip}'"
+  else
+    echo ""
+    echo "  As-tu un dossier de fichiers à importer ? (PDFs, Word, etc.)"
+    info "Le LLM configuré va les synthétiser en notes Markdown dans inbox/"
+    echo ""
+    read -rp "  Chemin du dossier (ou Entrée pour skip) : " IMPORT_FOLDER
+  fi
 
   if [ -z "$IMPORT_FOLDER" ]; then
     return 0
@@ -524,15 +583,21 @@ step8_import() {
 # === Étape 9 : Kepano skills =================================================
 step9_kepano() {
   step 9 "Skills Obsidian de Kepano (optionnel)"
-  echo ""
-  echo "  Kepano (Steph Ango), CEO d'Obsidian, publie des skills officiels"
-  echo "  qui apprennent à Claude Code à naviguer dans ton vault via le CLI."
-  echo ""
-  info "Slash commands ajoutés : obsidian-cli, obsidian-markdown, obsidian-bases, json-canvas, defuddle"
-  info "(commandes de lecture seule — rien n'est envoyé ailleurs)"
-  echo ""
-  read -rp "  Installer les skills Kepano ? [O/n] : " ANSWER
-  ANSWER="${ANSWER:-O}"
+
+  if [ "$IS_CI" = "true" ]; then
+    ANSWER="${XAIS_BRAIN_KEPANO:-n}"
+    info "CI mode — Kepano skills : $ANSWER"
+  else
+    echo ""
+    echo "  Kepano (Steph Ango), CEO d'Obsidian, publie des skills officiels"
+    echo "  qui apprennent à Claude Code à naviguer dans ton vault via le CLI."
+    echo ""
+    info "Slash commands ajoutés : obsidian-cli, obsidian-markdown, obsidian-bases, json-canvas, defuddle"
+    info "(commandes de lecture seule — rien n'est envoyé ailleurs)"
+    echo ""
+    read -rp "  Installer les skills Kepano ? [O/n] : " ANSWER
+    ANSWER="${ANSWER:-O}"
+  fi
 
   if [[ ! "$ANSWER" =~ ^[OoYy] ]]; then
     info "Skip — installable plus tard depuis github.com/kepano/obsidian-skills"
@@ -559,6 +624,34 @@ step9_kepano() {
   fi
 }
 
+# === Étape 10 : CLI wrapper (xb) =============================================
+step10_cli() {
+  step 10 "Installation du CLI wrapper (xb)"
+
+  if [ ! -f "$SCRIPT_DIR/vault-cli.sh" ]; then
+    warn "vault-cli.sh introuvable dans le repo — skip"
+    return 0
+  fi
+
+  local cli_dir="$HOME/.local/bin"
+  local cli_target="$cli_dir/xb"
+  mkdir -p "$cli_dir"
+  cp "$SCRIPT_DIR/vault-cli.sh" "$cli_target"
+  chmod +x "$cli_target"
+  ok "CLI installé : xb (dans $cli_dir/)"
+
+  # Vérifier si ~/.local/bin est dans le PATH
+  if ! echo "$PATH" | tr ':' '\n' | grep -qx "$cli_dir"; then
+    echo ""
+    warn "\$HOME/.local/bin n'est pas dans ton PATH."
+    info "Ajoute cette ligne à ton ~/.zshrc (ou ~/.bashrc) :"
+    echo ""
+    echo -e "  ${CYAN}export PATH=\"\$HOME/.local/bin:\$PATH\"${RESET}"
+    echo ""
+    info "Puis redémarre ton terminal ou : source ~/.zshrc"
+  fi
+}
+
 # === Vérification finale =====================================================
 verify_install() {
   echo ""
@@ -566,16 +659,20 @@ verify_install() {
   info "(Si quelque chose a échoué, relance setup.sh sans risque.)"
   echo ""
 
-  if brew list --cask obsidian &>/dev/null 2>&1 || [ -d /Applications/Obsidian.app ]; then
-    ok "Obsidian"
+  if [ "$IS_CI" = "true" ]; then
+    info "CI mode — skip vérifications Obsidian et Claude Code"
   else
-    err "Obsidian — réinstalle : brew install --cask obsidian"
-  fi
+    if brew list --cask obsidian &>/dev/null 2>&1 || [ -d /Applications/Obsidian.app ]; then
+      ok "Obsidian"
+    else
+      err "Obsidian — réinstalle : brew install --cask obsidian"
+    fi
 
-  if command -v claude &>/dev/null; then
-    ok "Claude Code  $(claude --version 2>/dev/null | head -1)"
-  else
-    warn "Claude Code pas dans le PATH — redémarre le terminal puis : claude"
+    if command -v claude &>/dev/null; then
+      ok "Claude Code  $(claude --version 2>/dev/null | head -1)"
+    else
+      warn "Claude Code pas dans le PATH — redémarre le terminal puis : claude"
+    fi
   fi
 
   if [ -x "$VENV_DIR/bin/python3" ]; then
@@ -609,10 +706,19 @@ verify_install() {
   else
     warn "Hooks FR manquants"
   fi
+
+  if command -v xb &>/dev/null; then
+    ok "CLI wrapper  xb ($(xb version 2>/dev/null))"
+  elif [ -x "$HOME/.local/bin/xb" ]; then
+    ok "CLI wrapper  xb (installé, pas encore dans le PATH)"
+  else
+    warn "CLI wrapper xb non installé"
+  fi
 }
 
 # === Avertissements ==========================================================
 print_warnings() {
+  if [ "$IS_CI" = "true" ]; then return 0; fi
   echo ""
   echo "  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
   echo ""
@@ -648,6 +754,7 @@ print_done() {
   echo "  - vault-config.json (source de vérité structurée)"
   echo "  - Système de mémoire indexé (MEMORY.md + memory/)"
   echo "  - Scripts Python multi-LLM (Gemini/Claude/OpenAI)"
+  echo "  - CLI wrapper : xb (raccourcis depuis n'importe quel dossier)"
   if [ "${IS_EXISTING_VAULT:-false}" = true ] && [ "${HAS_EXISTING_CLAUDE:-false}" = true ]; then
     echo "  - Ton ancien CLAUDE.md sauvegardé : ${BACKUP_NAME:-}"
   fi
@@ -660,6 +767,7 @@ print_done() {
   echo -e "  ${CYAN}3.${RESET} Dans un terminal :"
   echo -e "     ${DIM}cd \"$VAULT_PATH\" && claude${RESET}"
   echo -e "  ${CYAN}4.${RESET} Tape ${DIM}/vault-setup${RESET} — Claude t'interviewe et personnalise ton vault"
+  echo -e "  ${CYAN}5.${RESET} Essaie le CLI : ${DIM}xb status${RESET} — état du vault depuis n'importe où"
   echo ""
   echo -e "  ${WHITE}Pour éditer tes clés API plus tard :${RESET}"
   echo -e "     ${DIM}open -e \"$VAULT_PATH/.env\"${RESET}  ${DIM}(le fichier est caché, préfixé par un point)${RESET}"
@@ -669,6 +777,11 @@ print_done() {
 }
 
 open_obsidian_app() {
+  if [ "$IS_CI" = "true" ]; then
+    info "CI mode — skip ouverture Obsidian"
+    return 0
+  fi
+
   # Enregistre le vault dans le registre Obsidian
   # (~/Library/Application Support/obsidian/obsidian.json) pour qu'il s'ouvre
   # directement au lancement, plutôt que de pop "Vault not found".
@@ -754,6 +867,7 @@ main() {
   step7_llm_config
   step8_import
   step9_kepano
+  step10_cli
   verify_install
   print_warnings
   print_done
