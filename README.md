@@ -26,6 +26,31 @@ Une seule commande, ~3 minutes. Le script t'interroge sur :
 
 ---
 
+## CLI rapide (`xb`)
+
+Le setup installe `xb` dans `~/.local/bin/` — un raccourci pour les opérations courantes, utilisable depuis n'importe quel dossier.
+
+```bash
+xb status                     # État du vault (inbox, daily, provider)
+xb daily                      # Lance /daily en one-shot
+xb inbox                      # Lance /inbox-zero en one-shot
+xb intel ~/Documents/PDFs     # Traite des fichiers via LLM (sans session Claude)
+xb open                       # Ouvre Obsidian sur le vault
+xb shell                      # Session Claude Code interactive dans le vault
+xb help                       # Liste toutes les commandes
+```
+
+**Résolution du vault** : `xb` cherche dans cet ordre :
+1. `$XAIS_BRAIN_VAULT` (variable d'env)
+2. `vault-config.json` dans le répertoire courant
+3. `~/xais-brain-vault/` (défaut)
+
+Pour utiliser plusieurs vaults : `XAIS_BRAIN_VAULT=~/autre-vault xb status`
+
+> `xb status`, `xb intel` et `xb open` marchent sans Claude Code installé. Seuls `xb daily`, `xb inbox` et `xb shell` nécessitent Claude Code.
+
+---
+
 ## Ce qui est installé
 
 | Composant | Rôle |
@@ -37,6 +62,7 @@ Une seule commande, ~3 minutes. Le script t'interroge sur :
 | **2 hooks FR** | SessionStart (contexte vault au démarrage) + UserPromptSubmit (liste les skills sur trigger FR) |
 | **Output style Coach FR** | Mode coach challengeant activable via `/output-style` |
 | **Permissions cadrées** | `settings.json` : écritures scopées aux dossiers du vault, `.git/` et `.claude/` protégés, `rm -rf` refusé |
+| **CLI wrapper** (`xb`) | Raccourcis vault depuis n'importe quel dossier (`xb daily`, `xb status`, etc.) |
 | **Skills Kepano** *(optionnel)* | `obsidian-cli` `obsidian-markdown` `obsidian-bases` `json-canvas` `defuddle` |
 
 Les skills sont installés à la fois dans le vault et globalement (`~/.claude/skills/`) — tu peux les utiliser depuis n'importe quel dossier.
