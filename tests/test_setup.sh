@@ -113,10 +113,10 @@ test_fresh_install() {
   # Compteur dynamique de skills
   local skill_count
   skill_count=$(find "$TEST_VAULT/.claude/skills" -maxdepth 1 -type d | tail -n +2 | wc -l | tr -d ' ')
-  if [ "$skill_count" -eq 10 ]; then
+  if [ "$skill_count" -eq 11 ]; then
     PASS=$((PASS+1))
   else
-    echo "FAIL: $skill_count skills au lieu de 10"
+    echo "FAIL: $skill_count skills au lieu de 11"
     FAIL=$((FAIL+1))
   fi
 }

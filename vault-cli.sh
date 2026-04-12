@@ -146,6 +146,29 @@ cmd_open() {
   esac
 }
 
+cmd_clip() {
+  local vault
+  vault="$(resolve_vault)"
+  local url="$1"
+  if [ -z "$url" ]; then
+    echo "Usage : xb clip <url>" >&2
+    return 1
+  fi
+
+  local python_bin="$HOME/.xais-brain-venv/bin/python3"
+  if [ ! -x "$python_bin" ]; then
+    echo -e "${RED}Erreur${RESET} : venv Python introuvable ($python_bin)." >&2
+    echo "  Relance setup.sh pour installer les dépendances." >&2
+    return 1
+  fi
+
+  local cfg="$vault/vault-config.json"
+  local inbox_dir
+  inbox_dir=$(python3 -c "import json; print(json.load(open('$cfg')).get('folders',{}).get('inbox','inbox'))" 2>/dev/null || echo "inbox")
+
+  "$python_bin" "$vault/scripts/web_clip.py" "$url" "$vault/$inbox_dir"
+}
+
 cmd_shell() {
   require_claude
   local vault
@@ -165,6 +188,7 @@ cmd_help() {
   echo -e "  ${CYAN}daily${RESET}            Lance /daily en one-shot (note du jour + contexte)"
   echo -e "  ${CYAN}inbox${RESET}            Lance /inbox-zero en one-shot (tri automatique)"
   echo -e "  ${CYAN}intel${RESET} <dossier>   Traite un dossier de fichiers via LLM (pas besoin de Claude)"
+  echo -e "  ${CYAN}clip${RESET} <url>       Clippe une page web en note Markdown dans inbox/"
   echo -e "  ${CYAN}status${RESET}           Affiche l'état du vault (inbox, daily, provider)"
   echo -e "  ${CYAN}open${RESET}             Ouvre Obsidian sur le vault"
   echo -e "  ${CYAN}shell${RESET}            Ouvre une session Claude Code interactive dans le vault"
@@ -182,6 +206,7 @@ cmd_help() {
   echo -e "  ${DIM}xb status${RESET}                     # état du vault"
   echo -e "  ${DIM}xb daily${RESET}                      # note du jour"
   echo -e "  ${DIM}xb intel ~/Documents/PDFs${RESET}     # traiter des fichiers"
+  echo -e "  ${DIM}xb clip https://example.com/article${RESET}  # clipper une page web"
   echo -e "  ${DIM}XAIS_BRAIN_VAULT=~/autre-vault xb status${RESET}  # vault alternatif"
   echo ""
 }
@@ -195,6 +220,7 @@ case "${1:-}" in
   daily)    cmd_daily ;;
   inbox)    cmd_inbox ;;
   intel)    shift; cmd_intel "$@" ;;
+  clip)     shift; cmd_clip "$@" ;;
   status)   cmd_status ;;
   open)     cmd_open ;;
   shell)    cmd_shell ;;

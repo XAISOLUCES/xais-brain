@@ -58,7 +58,7 @@ xais-brain/
 │   └── .claude/
 │       ├── settings.json              ← Permissions + déclaration des hooks
 │       │
-│       ├── skills/                    ← 10 slash commands canoniques
+│       ├── skills/                    ← 11 slash commands canoniques
 │       │   ├── vault-setup/SKILL.md   ← Interview utilisateur → personnalise CLAUDE.md
 │       │   ├── daily/SKILL.md         ← Démarre la journée avec contexte vault
 │       │   ├── tldr/SKILL.md          ← Sauvegarde résumé de session
@@ -68,7 +68,8 @@ xais-brain/
 │       │   ├── humanise/SKILL.md      ← Nettoie un texte AI-ifié
 │       │   ├── import-vault/SKILL.md  ← Adopte un vault existant (BYOV)
 │       │   ├── project/SKILL.md       ← Charge contexte d'un side-project
-│       │   └── client/SKILL.md        ← Charge contexte d'un client en prod
+│       │   ├── client/SKILL.md        ← Charge contexte d'un client en prod
+│       │   └── clip/SKILL.md          ← Web clipper URL → Markdown inbox/
 │       │
 │       ├── hooks/
 │       │   ├── session-init.sh        ← SessionStart : surface daily/inbox
@@ -186,7 +187,7 @@ Les skills sont **aussi** installés dans `~/.claude/skills/` (global) pour êtr
    ┌──────────────────────────────────────┐         ┌──────────────────────┐
    │           vault-template/            │         │       scripts/       │
    │  CLAUDE.md, MEMORY.md, .claude/...   │────────▶│  file_intel.py +     │
-   │  10 skills + 2 hooks + coach + cfg   │         │  providers/{3 LLMs}  │
+   │  11 skills + 2 hooks + coach + cfg   │         │  providers/{3 LLMs}  │
    └──────────────────┬───────────────────┘         └──────────┬───────────┘
                       │                                        │
                       ▼                                        ▼
@@ -197,7 +198,7 @@ Les skills sont **aussi** installés dans `~/.claude/skills/` (global) pour êtr
 │   │  Obsidian    │   │  Claude Code    │   │   Python venv            │  │
 │   │  (.obsidian) │   │  (.claude)      │   │  ~/.xais-brain-venv/     │  │
 │   │              │   │                 │   │                          │  │
-│   │  - Vault UI  │◀─▶│  - 10 skills    │──▶│  scripts/file_intel.py   │  │
+│   │  - Vault UI  │◀─▶│  - 11 skills    │──▶│  scripts/file_intel.py   │  │
 │   │  - Markdown  │   │  - 2 hooks      │   │  → providers/{LLM}       │  │
 │   │  - Plugins   │   │  - coach.md     │   │  → résumé Markdown       │  │
 │   │              │   │  - settings.json│   │                          │  │
@@ -256,7 +257,7 @@ Les skills sont **aussi** installés dans `~/.claude/skills/` (global) pour êtr
 └────────┬────────┘
          ▼
 ┌─────────────────┐
-│  Étape 6        │  Boucle sur la liste hardcodée de 10 skills :
+│  Étape 6        │  Boucle sur la liste hardcodée de 11 skills :
 │  Skills install │  Copie vault-template/.claude/skills/$skill/SKILL.md
 │                 │   → $VAULT_PATH/.claude/skills/$skill/
 │                 │   → ~/.claude/skills/$skill/   (global)

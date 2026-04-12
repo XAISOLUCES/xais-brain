@@ -51,6 +51,7 @@ vault-config.json   ← Source de vérité structurée (nom, provider LLM, mappi
 - `/import-vault` — Adopte un vault Obsidian existant sans casser sa structure
 - `/project`      — Charge le contexte complet d'un side-project (projects/[nom]/)
 - `/client`       — Charge le contexte complet d'un client en prod (clients/[nom]/)
+- `/clip`         — Clippe une page web en note Markdown propre dans inbox/
 
 ## Règles avancées
 
