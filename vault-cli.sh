@@ -125,11 +125,25 @@ cmd_open() {
   local vault
   vault="$(resolve_vault)"
 
-  if [[ "$OSTYPE" == "darwin"* ]]; then
-    open -a Obsidian "$vault" 2>/dev/null || open "$vault"
-  else
-    xdg-open "$vault" 2>/dev/null || echo "Impossible d'ouvrir le vault. Ouvre Obsidian manuellement." >&2
-  fi
+  case "$OSTYPE" in
+    darwin*)
+      open -a Obsidian "$vault" 2>/dev/null || open "$vault"
+      ;;
+    linux*)
+      if command -v obsidian &>/dev/null; then
+        obsidian "$vault" &
+      elif command -v flatpak &>/dev/null && flatpak list 2>/dev/null | grep -q md.obsidian.Obsidian; then
+        flatpak run md.obsidian.Obsidian "$vault" &
+      elif command -v xdg-open &>/dev/null; then
+        xdg-open "$vault" &
+      else
+        echo "Ouvre Obsidian manuellement sur : $vault" >&2
+      fi
+      ;;
+    *)
+      echo "OS non supporté. Ouvre Obsidian manuellement sur : $vault" >&2
+      ;;
+  esac
 }
 
 cmd_shell() {

@@ -109,37 +109,59 @@ BANNER
   echo ""
 }
 
-# === OS check ================================================================
-check_os() {
-  if [[ "$OSTYPE" != "darwin"* ]]; then
-    if [ "$IS_CI" = "true" ]; then
-      warn "OS non-macOS détecté ($OSTYPE) — certaines étapes seront skippées en CI"
-      return 0
-    fi
-    err "Ce script est macOS uniquement."
-    info "Pour Linux/Windows, voir le README."
-    exit 1
-  fi
+# === Détection OS ============================================================
+detect_os() {
+  case "$OSTYPE" in
+    darwin*)  OS="macos" ;;
+    linux*)   OS="linux" ;;
+    *)
+      err "OS non supporté : $OSTYPE"
+      info "xais-brain supporte macOS et Linux."
+      exit 1
+      ;;
+  esac
+  export OS
 }
 
-# === Étape 1 : Homebrew ======================================================
-step1_brew() {
-  step 1 "Vérification de Homebrew"
-  if [ "$IS_CI" = "true" ] && [[ "$OSTYPE" != "darwin"* ]]; then
-    info "CI mode (non-macOS) — skip Homebrew"
-    return 0
-  fi
-  if ! command -v brew &>/dev/null; then
-    if [ "$IS_CI" = "true" ]; then
-      info "CI mode — skip installation Homebrew"
-      return 0
-    fi
-    echo "  Installation de Homebrew..."
-    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-    ok "Homebrew installé"
-  else
-    ok "Homebrew déjà installé"
-  fi
+# === Étape 1 : Gestionnaire de paquets =======================================
+step1_package_manager() {
+  step 1 "Vérification du gestionnaire de paquets"
+
+  case "$OS" in
+    macos)
+      if [ "$IS_CI" = "true" ]; then
+        if ! command -v brew &>/dev/null; then
+          info "CI mode — skip installation Homebrew"
+          return 0
+        fi
+      fi
+      if ! command -v brew &>/dev/null; then
+        echo "  Installation de Homebrew..."
+        /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+        ok "Homebrew installé"
+      else
+        ok "Homebrew déjà installé"
+      fi
+      ;;
+    linux)
+      # Détecter le package manager natif
+      if command -v apt-get &>/dev/null; then
+        PKG_MGR="apt"
+        ok "apt détecté (Debian/Ubuntu)"
+      elif command -v dnf &>/dev/null; then
+        PKG_MGR="dnf"
+        ok "dnf détecté (Fedora/RHEL)"
+      elif command -v pacman &>/dev/null; then
+        PKG_MGR="pacman"
+        ok "pacman détecté (Arch)"
+      else
+        PKG_MGR=""
+        warn "Gestionnaire de paquets non détecté"
+        info "Installe les dépendances manuellement (voir README)"
+      fi
+      export PKG_MGR
+      ;;
+  esac
 }
 
 # === Étape 2 : Obsidian (avec fix --adopt) ===================================
@@ -151,27 +173,58 @@ step2_obsidian() {
     return 0
   fi
 
-  if brew list --cask obsidian &>/dev/null 2>&1; then
-    ok "Obsidian déjà installé via Homebrew"
-    return 0
-  fi
+  case "$OS" in
+    macos)
+      if brew list --cask obsidian &>/dev/null 2>&1; then
+        ok "Obsidian déjà installé via Homebrew"
+        return 0
+      fi
 
-  # FIX bug --adopt : si Obsidian est déjà dans /Applications/ (install manuelle),
-  # on ne touche à rien. brew install --cask --adopt peut casser sur les vieilles
-  # versions qui n'ont pas le binaire obsidian-cli attendu par le cask.
-  if [ -d /Applications/Obsidian.app ]; then
-    ok "Obsidian déjà installé manuellement (/Applications/Obsidian.app)"
-    info "Pour passer en gestion brew plus tard : désinstalle puis brew install --cask obsidian"
-    return 0
-  fi
+      # FIX bug --adopt : si Obsidian est déjà dans /Applications/ (install manuelle),
+      # on ne touche à rien. brew install --cask --adopt peut casser sur les vieilles
+      # versions qui n'ont pas le binaire obsidian-cli attendu par le cask.
+      if [ -d /Applications/Obsidian.app ]; then
+        ok "Obsidian déjà installé manuellement (/Applications/Obsidian.app)"
+        info "Pour passer en gestion brew plus tard : désinstalle puis brew install --cask obsidian"
+        return 0
+      fi
 
-  echo "  Installation d'Obsidian..."
-  if brew install --cask obsidian; then
-    ok "Obsidian installé"
-  else
-    warn "Échec installation Obsidian — on continue le setup"
-    info "Alternative : télécharge depuis https://obsidian.md, puis relance ce script"
-  fi
+      echo "  Installation d'Obsidian..."
+      if brew install --cask obsidian; then
+        ok "Obsidian installé"
+      else
+        warn "Échec installation Obsidian — on continue le setup"
+        info "Alternative : télécharge depuis https://obsidian.md, puis relance ce script"
+      fi
+      ;;
+
+    linux)
+      if command -v obsidian &>/dev/null || [ -f /usr/bin/obsidian ]; then
+        ok "Obsidian déjà installé"
+        return 0
+      fi
+
+      # Flatpak est le moyen le plus universel sur Linux
+      if command -v flatpak &>/dev/null; then
+        if flatpak list 2>/dev/null | grep -q md.obsidian.Obsidian; then
+          ok "Obsidian déjà installé (Flatpak)"
+          return 0
+        fi
+        echo "  Installation d'Obsidian via Flatpak..."
+        if flatpak install -y flathub md.obsidian.Obsidian; then
+          ok "Obsidian installé (Flatpak)"
+        else
+          warn "Échec Flatpak — télécharge manuellement depuis obsidian.md"
+        fi
+      elif [ "${PKG_MGR:-}" = "pacman" ]; then
+        warn "Obsidian disponible via AUR : yay -S obsidian"
+        info "Installe-le manuellement puis relance ce script"
+      else
+        warn "Obsidian non installé — télécharge l'AppImage depuis obsidian.md"
+        info "https://obsidian.md/download"
+      fi
+      ;;
+  esac
 }
 
 # === Étape 3 : Claude Code CLI ===============================================
@@ -222,7 +275,11 @@ step4_python_deps() {
   PIP_OK=false
   local python_bin
   if ! python_bin="$(find_python)"; then
-    warn "Python 3 introuvable. Installe-le : brew install python@3.12"
+    if [ "$OS" = "macos" ]; then
+      warn "Python 3 introuvable. Installe-le : brew install python@3.12"
+    else
+      warn "Python 3 introuvable. Installe-le : sudo apt install python3 (ou équivalent)"
+    fi
     return 0
   fi
 
@@ -662,11 +719,23 @@ verify_install() {
   if [ "$IS_CI" = "true" ]; then
     info "CI mode — skip vérifications Obsidian et Claude Code"
   else
-    if brew list --cask obsidian &>/dev/null 2>&1 || [ -d /Applications/Obsidian.app ]; then
-      ok "Obsidian"
-    else
-      err "Obsidian — réinstalle : brew install --cask obsidian"
-    fi
+    # Obsidian check
+    case "$OS" in
+      macos)
+        if brew list --cask obsidian &>/dev/null 2>&1 || [ -d /Applications/Obsidian.app ]; then
+          ok "Obsidian"
+        else
+          err "Obsidian — réinstalle : brew install --cask obsidian"
+        fi
+        ;;
+      linux)
+        if command -v obsidian &>/dev/null || (command -v flatpak &>/dev/null && flatpak list 2>/dev/null | grep -q md.obsidian.Obsidian); then
+          ok "Obsidian"
+        else
+          warn "Obsidian non détecté — télécharge depuis obsidian.md"
+        fi
+        ;;
+    esac
 
     if command -v claude &>/dev/null; then
       ok "Claude Code  $(claude --version 2>/dev/null | head -1)"
@@ -680,7 +749,11 @@ verify_install() {
   elif command -v python3 &>/dev/null; then
     ok "$(python3 --version 2>&1)"
   else
-    err "Python 3 introuvable — brew install python@3.12"
+    if [ "$OS" = "macos" ]; then
+      err "Python 3 introuvable — brew install python@3.12"
+    else
+      err "Python 3 introuvable — sudo apt install python3 (ou équivalent)"
+    fi
   fi
 
   if [ -f "$VAULT_PATH/CLAUDE.md" ]; then
@@ -770,7 +843,11 @@ print_done() {
   echo -e "  ${CYAN}5.${RESET} Essaie le CLI : ${DIM}xb status${RESET} — état du vault depuis n'importe où"
   echo ""
   echo -e "  ${WHITE}Pour éditer tes clés API plus tard :${RESET}"
-  echo -e "     ${DIM}open -e \"$VAULT_PATH/.env\"${RESET}  ${DIM}(le fichier est caché, préfixé par un point)${RESET}"
+  if [ "$OS" = "macos" ]; then
+    echo -e "     ${DIM}open -e \"$VAULT_PATH/.env\"${RESET}  ${DIM}(le fichier est caché, préfixé par un point)${RESET}"
+  else
+    echo -e "     ${DIM}nano \"$VAULT_PATH/.env\"${RESET}  ${DIM}(le fichier est caché, préfixé par un point)${RESET}"
+  fi
   echo ""
   info "Ce script est safe à relancer — il détecte les vaults existants et n'écrase rien."
   echo ""
@@ -782,19 +859,21 @@ open_obsidian_app() {
     return 0
   fi
 
-  # Enregistre le vault dans le registre Obsidian
-  # (~/Library/Application Support/obsidian/obsidian.json) pour qu'il s'ouvre
-  # directement au lancement, plutôt que de pop "Vault not found".
-  # Safe : backup + atomic write + fallback silencieux sur open -a si ça foire.
+  case "$OS" in
+    macos)
+      # Enregistre le vault dans le registre Obsidian
+      # (~/Library/Application Support/obsidian/obsidian.json) pour qu'il s'ouvre
+      # directement au lancement, plutôt que de pop "Vault not found".
+      # Safe : backup + atomic write + fallback silencieux sur open -a si ça foire.
 
-  # Si Obsidian tourne déjà, il garde son état en RAM et écrasera notre fichier
-  # au prochain quit. On prévient l'utilisateur et on n'écrit pas pour rien.
-  local obsidian_running=false
-  if pgrep -x Obsidian &>/dev/null; then
-    obsidian_running=true
-  fi
+      # Si Obsidian tourne déjà, il garde son état en RAM et écrasera notre fichier
+      # au prochain quit. On prévient l'utilisateur et on n'écrit pas pour rien.
+      local obsidian_running=false
+      if pgrep -x Obsidian &>/dev/null; then
+        obsidian_running=true
+      fi
 
-  python3 - "$VAULT_PATH" <<'PYEOF' 2>/dev/null || true
+      python3 - "$VAULT_PATH" <<'PYEOF' 2>/dev/null || true
 import json, os, secrets, shutil, sys, tempfile, time
 
 vault = sys.argv[1]
@@ -841,14 +920,28 @@ except Exception:
     sys.exit(0)
 PYEOF
 
-  if [ "$obsidian_running" = true ]; then
-    echo ""
-    warn "Obsidian était déjà en cours d'exécution."
-    info "Quitte-le complètement (Cmd+Q) puis relance-le pour qu'il s'ouvre directement sur ton vault."
-    info "Sinon, ouvre ton vault manuellement : Open folder as vault → $VAULT_PATH"
-  fi
+      if [ "$obsidian_running" = true ]; then
+        echo ""
+        warn "Obsidian était déjà en cours d'exécution."
+        info "Quitte-le complètement (Cmd+Q) puis relance-le pour qu'il s'ouvre directement sur ton vault."
+        info "Sinon, ouvre ton vault manuellement : Open folder as vault → $VAULT_PATH"
+      fi
 
-  open -a Obsidian 2>/dev/null || true
+      open -a Obsidian 2>/dev/null || true
+      ;;
+
+    linux)
+      # Pas de registration automatique sur Linux (pas de registre central Obsidian)
+      # Juste ouvrir si Obsidian est disponible
+      if command -v obsidian &>/dev/null; then
+        obsidian "$VAULT_PATH" &
+      elif command -v flatpak &>/dev/null && flatpak list 2>/dev/null | grep -q md.obsidian.Obsidian; then
+        flatpak run md.obsidian.Obsidian "$VAULT_PATH" &
+      else
+        info "Ouvre Obsidian manuellement → Open folder as vault → $VAULT_PATH"
+      fi
+      ;;
+  esac
 }
 
 # === Main ====================================================================
@@ -857,8 +950,8 @@ main() {
   trap cleanup_bootstrap EXIT
 
   show_banner
-  check_os
-  step1_brew
+  detect_os
+  step1_package_manager
   step2_obsidian
   step3_claude_code
   step4_python_deps

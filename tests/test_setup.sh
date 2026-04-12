@@ -204,6 +204,42 @@ test_hook_skill_discovery() {
   fi
 }
 
+# === Test 7 : Spécifique Linux ===============================================
+test_linux_specific() {
+  echo "=== Test : spécifique Linux ==="
+  if [[ "$OSTYPE" != "linux"* ]]; then
+    echo "SKIP: test Linux uniquement"
+    return 0
+  fi
+
+  # Vérifier que les hooks n'appellent pas de commandes macOS-only
+  if ! grep -q "brew " "$TEST_VAULT/.claude/hooks/session-init.sh" 2>/dev/null; then
+    PASS=$((PASS+1))
+  else
+    echo "FAIL: session-init.sh contient 'brew' (macOS-only)"
+    FAIL=$((FAIL+1))
+  fi
+
+  # Vérifier que date GNU fonctionne
+  if date -d "yesterday" +%Y-%m-%d >/dev/null 2>&1; then
+    PASS=$((PASS+1))
+  else
+    echo "FAIL: date -d 'yesterday' ne fonctionne pas (GNU date requis)"
+    FAIL=$((FAIL+1))
+  fi
+
+  # Vérifier que la structure vault est identique à macOS
+  assert_dir  "$TEST_VAULT/inbox"
+  assert_dir  "$TEST_VAULT/daily"
+  assert_dir  "$TEST_VAULT/projects"
+  assert_dir  "$TEST_VAULT/research"
+  assert_dir  "$TEST_VAULT/archive"
+  assert_dir  "$TEST_VAULT/memory"
+  assert_dir  "$TEST_VAULT/.obsidian"
+  assert_file "$TEST_VAULT/CLAUDE.md"
+  assert_file "$TEST_VAULT/vault-config.json"
+}
+
 # === Exécution ===============================================================
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
@@ -217,6 +253,7 @@ test_scripts_python
 test_file_intel_dry
 test_hook_session_init
 test_hook_skill_discovery
+test_linux_specific
 
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"

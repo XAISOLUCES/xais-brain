@@ -3,7 +3,7 @@
 > Ton second cerveau — Obsidian + Claude Code, prêt en une commande.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Platform](https://img.shields.io/badge/platform-macOS-lightgrey.svg)](#)
+[![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Linux-lightgrey.svg)](#)
 [![Status](https://img.shields.io/badge/status-alpha-orange.svg)](#)
 
 **xais-brain** est un installateur tout-en-un qui transforme un dossier vide en vault Obsidian piloté par Claude Code. Tu déposes tes fichiers dans `inbox/`, Claude les digère, les organise dans les bons dossiers, et les retrouve quand tu en as besoin.
@@ -229,7 +229,10 @@ Ou étape par étape :
 
 ```bash
 # 1. Dépendances
+# macOS :
 brew install --cask obsidian
+# Linux (Flatpak) :
+# flatpak install flathub md.obsidian.Obsidian
 curl -fsSL https://claude.ai/install.sh | sh
 
 # 2. Python venv
