@@ -54,6 +54,12 @@ xais-brain/
 │   ├── archive/.gitkeep               ← Travail terminé (jamais supprimé)
 │   ├── memory/
 │   │   └── README.md                  ← Pattern mémoire long terme
+│   ├── 99-Meta/                       ← Piste d'audit du vault (hors contenu)
+│   │   ├── README.md                  ← Rôle + instructions exclusion du graphe Obsidian
+│   │   ├── Audit.md                   ← Dernier rapport /vault-audit
+│   │   ├── Fact-Check-Log.md          ← Log append-only des sources (alimenté par /clip, /file-intel)
+│   │   └── Session-Debriefs/          ← Rétrospectives (alimenté par /tldr)
+│   │       └── .gitkeep
 │   │
 │   └── .claude/
 │       ├── settings.json              ← Permissions + déclaration des hooks
@@ -121,6 +127,11 @@ Voici ce que l'utilisateur obtient après `setup.sh` :
 ├── archive/                           ← Travail terminé
 ├── memory/                            ← Mémoire sémantique (user, projects, decisions...)
 │   └── README.md
+├── 99-Meta/                           ← Piste d'audit du vault (à exclure du graphe Obsidian)
+│   ├── README.md                      ← Rôle + instructions d'exclusion
+│   ├── Audit.md                       ← Dernier rapport /vault-audit
+│   ├── Fact-Check-Log.md              ← Log append-only des sources (/clip, /file-intel)
+│   └── Session-Debriefs/              ← Rétrospectives (/tldr)
 │
 ├── scripts/                           ← Copié depuis xais-brain/scripts/
 │   ├── file_intel.py

@@ -359,7 +359,7 @@ step5_vault() {
   # .obsidian/ est obligatoire : sans ce dossier, Obsidian refuse d'ouvrir
   # le path et pop "Vault not found". Vide suffit, Obsidian le remplit au
   # premier lancement (workspace.json, app.json, etc.).
-  mkdir -p "$VAULT_PATH"/{inbox,daily,projects,research,archive,memory,scripts/providers,.claude/skills,.claude/rules,.claude/hooks,.claude/output-styles,.obsidian}
+  mkdir -p "$VAULT_PATH"/{inbox,daily,projects,research,archive,memory,99-Meta/Session-Debriefs,scripts/providers,.claude/skills,.claude/rules,.claude/hooks,.claude/output-styles,.obsidian}
   copy_vault_template
 
   if [ "$IS_EXISTING_VAULT" = true ]; then
@@ -435,6 +435,22 @@ copy_vault_template() {
   for f in __init__.py base.py _prompts.py gemini_provider.py claude_provider.py openai_provider.py; do
     safe_cp "$SCRIPT_DIR/scripts/providers/$f" "$VAULT_PATH/scripts/providers/$f"
   done
+
+  # 99-Meta/ : piste d'audit du vault (audit, fact-check log, session debriefs)
+  # Ne jamais écraser si déjà existant (l'user peut avoir coché des cases dans Audit.md
+  # ou ajouté des entrées manuelles dans Fact-Check-Log.md).
+  if [ ! -f "$VAULT_PATH/99-Meta/README.md" ]; then
+    safe_cp "$SCRIPT_DIR/vault-template/99-Meta/README.md" "$VAULT_PATH/99-Meta/README.md"
+  fi
+  if [ ! -f "$VAULT_PATH/99-Meta/Audit.md" ]; then
+    safe_cp "$SCRIPT_DIR/vault-template/99-Meta/Audit.md" "$VAULT_PATH/99-Meta/Audit.md"
+  fi
+  if [ ! -f "$VAULT_PATH/99-Meta/Fact-Check-Log.md" ]; then
+    safe_cp "$SCRIPT_DIR/vault-template/99-Meta/Fact-Check-Log.md" "$VAULT_PATH/99-Meta/Fact-Check-Log.md"
+  fi
+  if [ ! -f "$VAULT_PATH/99-Meta/Session-Debriefs/.gitkeep" ]; then
+    safe_cp "$SCRIPT_DIR/vault-template/99-Meta/Session-Debriefs/.gitkeep" "$VAULT_PATH/99-Meta/Session-Debriefs/.gitkeep"
+  fi
 }
 
 # === Étape 6 : Skills install ================================================

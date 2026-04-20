@@ -84,6 +84,8 @@ test_fresh_install() {
   assert_dir  "$TEST_VAULT/research"
   assert_dir  "$TEST_VAULT/archive"
   assert_dir  "$TEST_VAULT/memory"
+  assert_dir  "$TEST_VAULT/99-Meta"
+  assert_dir  "$TEST_VAULT/99-Meta/Session-Debriefs"
   assert_dir  "$TEST_VAULT/.obsidian"
 
   # Fichiers core
@@ -92,6 +94,12 @@ test_fresh_install() {
   assert_file "$TEST_VAULT/vault-config.json"
   assert_file "$TEST_VAULT/.env"
   assert_json "$TEST_VAULT/vault-config.json"
+
+  # 99-Meta/ : piste d'audit (templates)
+  assert_file "$TEST_VAULT/99-Meta/README.md"
+  assert_file "$TEST_VAULT/99-Meta/Audit.md"
+  assert_file "$TEST_VAULT/99-Meta/Fact-Check-Log.md"
+  assert_file "$TEST_VAULT/99-Meta/Session-Debriefs/.gitkeep"
 
   # Skills (10 canoniques)
   local expected_skills=(vault-setup daily tldr file-intel inbox-zero memory-add humanise import-vault client project)
@@ -235,9 +243,12 @@ test_linux_specific() {
   assert_dir  "$TEST_VAULT/research"
   assert_dir  "$TEST_VAULT/archive"
   assert_dir  "$TEST_VAULT/memory"
+  assert_dir  "$TEST_VAULT/99-Meta"
+  assert_dir  "$TEST_VAULT/99-Meta/Session-Debriefs"
   assert_dir  "$TEST_VAULT/.obsidian"
   assert_file "$TEST_VAULT/CLAUDE.md"
   assert_file "$TEST_VAULT/vault-config.json"
+  assert_file "$TEST_VAULT/99-Meta/README.md"
 }
 
 # === Exécution ===============================================================
