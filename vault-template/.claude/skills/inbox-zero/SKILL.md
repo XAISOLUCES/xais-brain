@@ -42,6 +42,18 @@ Utilise `mv` pour préserver l'historique git si le vault est versionné.
 
 Crée les dossiers cibles s'ils n'existent pas (ex: `projects/[nom]/notes/`).
 
+**Règle de préservation du frontmatter (piste 6B — god-mode patterns)**
+Les fichiers clippés par `/clip` ou résumés par `/file-intel` contiennent un frontmatter YAML enrichi (`source`, `source_url`/`source_file`, `source_knowledge`, `verification_date`, `statut`, `importance`, `tags`, …). `/inbox-zero` **ne doit JAMAIS** :
+
+- réécrire ou renommer ces champs,
+- normaliser la casse,
+- supprimer des champs inconnus,
+- modifier l'ordre des clés YAML existantes.
+
+Le skill ne fait que **déplacer** le fichier. Si tu veux enrichir un frontmatter, utilise `/vault-audit --migrate` (skill dédié, piste 6E).
+
+Tu peux lire le frontmatter pour **classifier** la destination (par exemple `source: pdf` + `importance: core` → `research/`), mais tu n'en modifies jamais la valeur.
+
 ### 5. Récap final
 
 ```

@@ -532,6 +532,36 @@ Le skill `/memory-add` est l'interface pour ajouter une nouvelle entrée et mett
 
 **Règle non-négociable** : chaque réponse se termine par (1) une action concrète faisable dans l'heure, et (2) une question d'accountability. Pas d'exception, même sur une question factuelle. Si Claude oublie ces deux éléments, la réponse est considérée comme incomplète.
 
+### Frontmatter standard (piste 6B — god-mode patterns)
+
+Depuis la piste 6B, toute note générée par `/clip` et `/file-intel` porte un frontmatter YAML enrichi, auditable par `/vault-audit` (piste 6E) :
+
+```yaml
+---
+source: web | pdf | docx | txt | md | manual | import | session
+source_url: https://...             # uniquement si source=web (clip)
+source_file: ./path/to.pdf          # uniquement si source=pdf|docx|txt|md (file-intel)
+source_knowledge: internal | web-checked | mixed
+verification_date: 2026-04-21       # ISO YYYY-MM-DD
+statut: draft | verified | to-verify | archived
+importance: low | medium | high | core
+tags: [...]
+---
+```
+
+**Règle d'or** : ces champs sont **additifs**. Les notes existantes ne sont jamais modifiées automatiquement ; seul `xb audit --migrate` (piste 6E) peut compléter les champs manquants, et uniquement en append (jamais en renommage).
+
+**Cartographie skill → valeurs** :
+
+| Skill | `source` | `source_knowledge` | `statut` initial |
+|-------|----------|--------------------|------------------|
+| `/clip` | `web` | `web-checked` | `draft` |
+| `/file-intel` (pdf) | `pdf` | `internal` | `to-verify` |
+| `/file-intel` (docx) | `docx` | `internal` | `to-verify` |
+| `/file-intel` (txt/md) | `txt` ou `md` | `internal` | `to-verify` |
+
+`/inbox-zero` **ne modifie jamais** le frontmatter ; il ne fait que déplacer les fichiers. Pour enrichir/migrer un frontmatter, utiliser `xb audit --migrate` (piste 6E, pas encore livré).
+
 ### Skills canoniques (10) vs Skills Kepano (5 optionnels)
 
 | Catégorie | Source | Activé par défaut |

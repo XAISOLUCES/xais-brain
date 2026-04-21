@@ -91,17 +91,65 @@ def slugify(text: str) -> str:
     return re.sub(r"[-\s]+", "-", slug).strip("-")[:80] or "clip"
 
 
+def build_frontmatter(url: str, today: str) -> str:
+    """Construit le frontmatter enrichi (piste 6B) pour une note clippee.
+
+    Schema cible (cf. specs/todo/06-integration-god-mode-patterns.md §3.2) :
+        source: web
+        source_url: <url>
+        source_knowledge: web-checked
+        verification_date: <today ISO>
+        statut: draft
+        importance: medium
+        type: web-clip
+        clipped: <today>
+        tags: [inbox, web]
+    """
+    return (
+        "---\n"
+        "source: web\n"
+        f"source_url: {url}\n"
+        "source_knowledge: web-checked\n"
+        f"verification_date: {today}\n"
+        "statut: draft\n"
+        "importance: medium\n"
+        "type: web-clip\n"
+        f"clipped: {today}\n"
+        "tags: [inbox, web]\n"
+        "---"
+    )
+
+
+def append_fact_check_log(vault_dir: Path, note_title: str, url: str, today: str) -> None:
+    """Append une entree dans 99-Meta/Fact-Check-Log.md si le fichier existe.
+
+    No-op si le dossier 99-Meta/ n'existe pas (vault pre-6A ou non configure).
+    Piste 6D a la charge d'alimenter completement ce log, mais la piste 6B
+    prepare deja les metadonnees necessaires dans le frontmatter.
+    """
+    log_path = vault_dir / "99-Meta" / "Fact-Check-Log.md"
+    if not log_path.exists():
+        return
+    entry = (
+        f"\n## {today} — [[{note_title}]]\n"
+        f"- **Source** : web (`{url}`)\n"
+        "- **Skill** : /clip\n"
+        "- **Statut** : draft (à vérifier)\n"
+    )
+    try:
+        with log_path.open("a", encoding="utf-8") as f:
+            f.write(entry)
+    except OSError:
+        # Log cassable mais non bloquant pour le clip lui-meme
+        pass
+
+
 def clip(url: str, inbox_dir: Path) -> Path:
     """Clippe une URL dans inbox_dir et retourne le path du fichier."""
     title, content = fetch_and_extract(url)
     today = date.today().isoformat()
 
-    frontmatter = f"""---
-source: {url}
-clipped: {today}
-type: web-clip
-tags: [inbox, web]
----"""
+    frontmatter = build_frontmatter(url, today)
 
     markdown = f"""{frontmatter}
 
@@ -120,6 +168,11 @@ tags: [inbox, web]
         out_path = inbox_dir / f"{slugify(title)}-{today}.md"
 
     out_path.write_text(markdown, encoding="utf-8")
+
+    # Best-effort append au Fact-Check-Log si le vault l'a (piste 6A/6D)
+    # inbox_dir = <vault>/inbox → parent = <vault>
+    append_fact_check_log(inbox_dir.parent, title, url, today)
+
     return out_path
 
 
