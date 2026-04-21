@@ -106,6 +106,10 @@ mon-vault/
 ├── projects/              ← projets actifs et briefs
 ├── research/              ← notes de recherche, synthèses, idées
 ├── archive/               ← travail terminé (jamais supprimé)
+├── 99-Meta/               ← piste d'audit du vault (à exclure du graphe Obsidian)
+│   ├── Audit.md           ← dernier rapport /vault-audit (piste 6E, à venir)
+│   ├── Fact-Check-Log.md  ← log append-only des sources (alimenté par /clip, /file-intel)
+│   └── Session-Debriefs/  ← rétrospectives de session (alimenté par /tldr)
 ├── scripts/
 │   ├── file_intel.py      ← extracteurs PDF/DOCX/TXT/MD + orchestrateur
 │   ├── web_clip.py        ← web clipper URL → Markdown (inbox/)
@@ -243,17 +247,18 @@ python3 -m venv ~/.xais-brain-venv
 ~/.xais-brain-venv/bin/pip install -r requirements.txt
 
 # 3. Vault
-mkdir -p ~/mon-vault/{inbox,daily,projects,research,archive,memory,scripts/providers,.claude/skills,.claude/hooks,.claude/output-styles,.claude/rules}
+mkdir -p ~/mon-vault/{inbox,daily,projects,research,archive,memory,99-Meta/Session-Debriefs,scripts/providers,.claude/skills,.claude/hooks,.claude/output-styles,.claude/rules}
 cp vault-template/CLAUDE.md ~/mon-vault/
 cp vault-template/MEMORY.md ~/mon-vault/
 cp vault-template/vault-config.json ~/mon-vault/
+cp -r vault-template/99-Meta/README.md vault-template/99-Meta/Audit.md vault-template/99-Meta/Fact-Check-Log.md ~/mon-vault/99-Meta/
 cp -r vault-template/.claude/skills/* ~/mon-vault/.claude/skills/
 cp -r vault-template/.claude/skills/* ~/.claude/skills/
 cp vault-template/.claude/hooks/*.sh ~/mon-vault/.claude/hooks/
 chmod +x ~/mon-vault/.claude/hooks/*.sh
 cp vault-template/.claude/output-styles/coach.md ~/mon-vault/.claude/output-styles/
 cp vault-template/.claude/settings.json ~/mon-vault/.claude/
-cp scripts/file_intel.py ~/mon-vault/scripts/
+cp scripts/file_intel.py scripts/web_clip.py ~/mon-vault/scripts/
 cp scripts/providers/* ~/mon-vault/scripts/providers/
 
 # 4. Config LLM

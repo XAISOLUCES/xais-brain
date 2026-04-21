@@ -562,11 +562,11 @@ tags: [...]
 
 `/inbox-zero` **ne modifie jamais** le frontmatter ; il ne fait que déplacer les fichiers. Pour enrichir/migrer un frontmatter, utiliser `xb audit --migrate` (piste 6E, pas encore livré).
 
-### Skills canoniques (10) vs Skills Kepano (5 optionnels)
+### Skills canoniques (11) vs Skills Kepano (5 optionnels)
 
 | Catégorie | Source | Activé par défaut |
 |---|---|---|
-| **xais-brain core** (10) | `vault-template/.claude/skills/` | ✅ Oui |
+| **xais-brain core** (11) | `vault-template/.claude/skills/` | ✅ Oui |
 | **Kepano** (5) | `github.com/kepano/obsidian-skills` | ❌ Demandé en étape 9 |
 
 Les skills Kepano (CEO d'Obsidian) sont des compagnons de navigation : `obsidian-cli` (CLI Obsidian officiel), `obsidian-markdown` (wikilinks/callouts/embeds), `obsidian-bases` (vues table/card), `json-canvas` (canvas visuels), `defuddle` (extraction markdown propre depuis URLs).
