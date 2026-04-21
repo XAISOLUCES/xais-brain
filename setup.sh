@@ -11,6 +11,9 @@ VENV_DIR="$HOME/.xais-brain-venv"
 REPO_URL="https://github.com/XAISOLUCES/xais-brain.git"
 DEFAULT_VAULT="$HOME/xais-brain-vault"
 NUM_STEPS=10
+# Note : le compte des skills (vault-template/.claude/skills/) est desormais 12
+# (vault-setup, daily, tldr, file-intel, inbox-zero, memory-add, humanise,
+# import-vault, client, project, clip, vault-audit).
 
 # === Mode CI / non-interactif ================================================
 # Si XAIS_BRAIN_CI=true (ou CI=true), tous les read -rp sont bypassés avec des
@@ -99,7 +102,7 @@ BANNER
   echo -e "  ${PURPLE}Obsidian${RESET}        App de notes free, fichiers Markdown locaux"
   echo -e "  ${PURPLE}Claude Code${RESET}     IA Anthropic en CLI, lit et écrit dans ton vault"
   echo -e "  ${PURPLE}Python deps${RESET}     Libs pour traiter PDFs et docs via LLM"
-  echo -e "  ${PURPLE}11 skills${RESET}       Slash commands FR pour gérer ton vault"
+  echo -e "  ${PURPLE}12 skills${RESET}       Slash commands FR pour gérer ton vault"
   echo -e "  ${PURPLE}Hooks FR${RESET}        SessionStart + skill-discovery en français"
   echo -e "  ${PURPLE}Skills Kepano${RESET}   CLI Obsidian officiel (optionnel)"
   echo ""
@@ -377,7 +380,7 @@ handle_existing_vault() {
   echo ""
   echo "  Le script va :"
   echo -e "  ${GREEN}+${RESET} Ajouter les dossiers manquants (inbox/, daily/, etc.)"
-  echo -e "  ${GREEN}+${RESET} Installer 11 slash commands + 2 hooks FR"
+  echo -e "  ${GREEN}+${RESET} Installer 12 slash commands + 2 hooks FR"
   echo -e "  ${GREEN}+${RESET} Copier les scripts dans scripts/"
   echo -e "  ${GREEN}+${RESET} Créer vault-config.json (source de vérité structurée)"
   if [ "$HAS_EXISTING_CLAUDE" = true ]; then
@@ -429,9 +432,10 @@ copy_vault_template() {
     safe_cp "$SCRIPT_DIR/vault-template/vault-config.json" "$VAULT_PATH/vault-config.json"
   fi
 
-  # Scripts Python (orchestrateur + providers + web clipper)
+  # Scripts Python (orchestrateur + providers + web clipper + vault audit)
   safe_cp "$SCRIPT_DIR/scripts/file_intel.py" "$VAULT_PATH/scripts/file_intel.py"
   safe_cp "$SCRIPT_DIR/scripts/web_clip.py" "$VAULT_PATH/scripts/web_clip.py"
+  safe_cp "$SCRIPT_DIR/scripts/vault_audit.py" "$VAULT_PATH/scripts/vault_audit.py"
   for f in __init__.py base.py _prompts.py gemini_provider.py claude_provider.py openai_provider.py; do
     safe_cp "$SCRIPT_DIR/scripts/providers/$f" "$VAULT_PATH/scripts/providers/$f"
   done
@@ -457,7 +461,7 @@ copy_vault_template() {
 step6_skills() {
   step 6 "Installation des slash commands, hooks et output-styles"
 
-  local skills=(vault-setup daily tldr file-intel inbox-zero memory-add humanise import-vault client project clip)
+  local skills=(vault-setup daily tldr file-intel inbox-zero memory-add humanise import-vault client project clip vault-audit)
   local src="$SCRIPT_DIR/vault-template/.claude/skills"
 
   for skill in "${skills[@]}"; do
@@ -837,7 +841,7 @@ print_done() {
   fi
   echo ""
   echo -e "  ${WHITE}Ce que tu obtiens :${RESET}"
-  echo "  - 11 slash commands : /vault-setup /daily /tldr /file-intel /inbox-zero /memory-add /humanise /import-vault /project /client /clip"
+  echo "  - 12 slash commands : /vault-setup /daily /tldr /file-intel /inbox-zero /memory-add /humanise /import-vault /project /client /clip /vault-audit"
   echo "  - 2 hooks FR : session-init (contexte au démarrage) + skill-discovery"
   echo "  - Output style : Coach FR (tape /output-style pour l'activer)"
   echo "  - CLAUDE.md template (perso via /vault-setup)"

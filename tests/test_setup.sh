@@ -101,8 +101,8 @@ test_fresh_install() {
   assert_file "$TEST_VAULT/99-Meta/Fact-Check-Log.md"
   assert_file "$TEST_VAULT/99-Meta/Session-Debriefs/.gitkeep"
 
-  # Skills (10 canoniques)
-  local expected_skills=(vault-setup daily tldr file-intel inbox-zero memory-add humanise import-vault client project)
+  # Skills (12 canoniques dont clip et vault-audit)
+  local expected_skills=(vault-setup daily tldr file-intel inbox-zero memory-add humanise import-vault client project clip vault-audit)
   for skill in "${expected_skills[@]}"; do
     assert_file "$TEST_VAULT/.claude/skills/$skill/SKILL.md"
   done
@@ -121,10 +121,10 @@ test_fresh_install() {
   # Compteur dynamique de skills
   local skill_count
   skill_count=$(find "$TEST_VAULT/.claude/skills" -maxdepth 1 -type d | tail -n +2 | wc -l | tr -d ' ')
-  if [ "$skill_count" -eq 11 ]; then
+  if [ "$skill_count" -eq 12 ]; then
     PASS=$((PASS+1))
   else
-    echo "FAIL: $skill_count skills au lieu de 11"
+    echo "FAIL: $skill_count skills au lieu de 12"
     FAIL=$((FAIL+1))
   fi
 }
@@ -153,6 +153,8 @@ test_idempotent_rerun() {
 test_scripts_python() {
   echo "=== Test : scripts Python copiés ==="
   assert_file "$TEST_VAULT/scripts/file_intel.py"
+  assert_file "$TEST_VAULT/scripts/web_clip.py"
+  assert_file "$TEST_VAULT/scripts/vault_audit.py"
   assert_file "$TEST_VAULT/scripts/providers/__init__.py"
   assert_file "$TEST_VAULT/scripts/providers/base.py"
   assert_file "$TEST_VAULT/scripts/providers/_prompts.py"

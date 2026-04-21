@@ -177,6 +177,25 @@ cmd_shell() {
   cd "$vault" && exec claude
 }
 
+cmd_audit() {
+  local vault
+  vault="$(resolve_vault)"
+
+  local python_bin="$HOME/.xais-brain-venv/bin/python3"
+  if [ ! -x "$python_bin" ]; then
+    python_bin="python3"
+  fi
+
+  local script="$vault/scripts/vault_audit.py"
+  if [ ! -f "$script" ]; then
+    echo -e "${RED}Erreur${RESET} : script introuvable : $script" >&2
+    echo "  Relance setup.sh pour installer les scripts." >&2
+    return 1
+  fi
+
+  "$python_bin" "$script" "$vault" "$@"
+}
+
 cmd_help() {
   echo ""
   echo -e "  ${WHITE}xb${RESET} — CLI wrapper pour xais-brain (v$VERSION)"
@@ -189,6 +208,7 @@ cmd_help() {
   echo -e "  ${CYAN}inbox${RESET}            Lance /inbox-zero en one-shot (tri automatique)"
   echo -e "  ${CYAN}intel${RESET} <dossier>   Traite un dossier de fichiers via LLM (pas besoin de Claude)"
   echo -e "  ${CYAN}clip${RESET} <url>       Clippe une page web en note Markdown dans inbox/"
+  echo -e "  ${CYAN}audit${RESET} [--migrate] Scanne le vault et genere un rapport d'hygiene"
   echo -e "  ${CYAN}status${RESET}           Affiche l'état du vault (inbox, daily, provider)"
   echo -e "  ${CYAN}open${RESET}             Ouvre Obsidian sur le vault"
   echo -e "  ${CYAN}shell${RESET}            Ouvre une session Claude Code interactive dans le vault"
@@ -207,6 +227,8 @@ cmd_help() {
   echo -e "  ${DIM}xb daily${RESET}                      # note du jour"
   echo -e "  ${DIM}xb intel ~/Documents/PDFs${RESET}     # traiter des fichiers"
   echo -e "  ${DIM}xb clip https://example.com/article${RESET}  # clipper une page web"
+  echo -e "  ${DIM}xb audit${RESET}                      # rapport d'hygiene du vault"
+  echo -e "  ${DIM}xb audit --migrate${RESET}            # complete les frontmatter manquants"
   echo -e "  ${DIM}XAIS_BRAIN_VAULT=~/autre-vault xb status${RESET}  # vault alternatif"
   echo ""
 }
@@ -221,6 +243,7 @@ case "${1:-}" in
   inbox)    cmd_inbox ;;
   intel)    shift; cmd_intel "$@" ;;
   clip)     shift; cmd_clip "$@" ;;
+  audit)    shift; cmd_audit "$@" ;;
   status)   cmd_status ;;
   open)     cmd_open ;;
   shell)    cmd_shell ;;

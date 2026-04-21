@@ -52,6 +52,7 @@ vault-config.json   ← Source de vérité structurée (nom, provider LLM, mappi
 - `/project`      — Charge le contexte complet d'un side-project (projects/[nom]/)
 - `/client`       — Charge le contexte complet d'un client en prod (clients/[nom]/)
 - `/clip`         — Clippe une page web en note Markdown propre dans inbox/
+- `/vault-audit`  — Scanne le vault et génère un rapport d'hygiène dans `99-Meta/Audit-YYYY-MM-DD.md`
 
 ## Règles avancées
 

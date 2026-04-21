@@ -32,8 +32,10 @@ xais-brain/
 │
 ├── setup.sh                           ← Orchestrateur d'install (9 étapes)
 │
-├── scripts/                           ← Moteur Python /file-intel
+├── scripts/                           ← Moteurs Python (file-intel, web-clip, vault-audit)
 │   ├── file_intel.py                  ← Extracteurs PDF/DOCX/TXT/MD + main
+│   ├── web_clip.py                    ← URL → Markdown (piste 6B)
+│   ├── vault_audit.py                 ← Audit hygiene vault (piste 6E)
 │   └── providers/
 │       ├── __init__.py                ← get_provider() — factory selon LLM_PROVIDER
 │       ├── base.py                    ← LLMProvider (interface ABC)
@@ -64,7 +66,7 @@ xais-brain/
 │   └── .claude/
 │       ├── settings.json              ← Permissions + déclaration des hooks
 │       │
-│       ├── skills/                    ← 11 slash commands canoniques
+│       ├── skills/                    ← 12 slash commands canoniques
 │       │   ├── vault-setup/SKILL.md   ← Interview utilisateur → personnalise CLAUDE.md
 │       │   ├── daily/SKILL.md         ← Démarre la journée avec contexte vault
 │       │   ├── tldr/SKILL.md          ← Sauvegarde résumé de session
@@ -75,7 +77,8 @@ xais-brain/
 │       │   ├── import-vault/SKILL.md  ← Adopte un vault existant (BYOV)
 │       │   ├── project/SKILL.md       ← Charge contexte d'un side-project
 │       │   ├── client/SKILL.md        ← Charge contexte d'un client en prod
-│       │   └── clip/SKILL.md          ← Web clipper URL → Markdown inbox/
+│       │   ├── clip/SKILL.md          ← Web clipper URL → Markdown inbox/
+│       │   └── vault-audit/SKILL.md   ← Audit hygiene du vault (piste 6E)
 │       │
 │       ├── hooks/
 │       │   ├── session-init.sh        ← SessionStart : surface daily/inbox
@@ -560,13 +563,35 @@ tags: [...]
 | `/file-intel` (docx) | `docx` | `internal` | `to-verify` |
 | `/file-intel` (txt/md) | `txt` ou `md` | `internal` | `to-verify` |
 
-`/inbox-zero` **ne modifie jamais** le frontmatter ; il ne fait que déplacer les fichiers. Pour enrichir/migrer un frontmatter, utiliser `xb audit --migrate` (piste 6E, pas encore livré).
+`/inbox-zero` **ne modifie jamais** le frontmatter ; il ne fait que déplacer les fichiers. Pour enrichir/migrer un frontmatter, utiliser `xb audit --migrate` (piste 6E).
 
-### Skills canoniques (11) vs Skills Kepano (5 optionnels)
+### `/vault-audit` et `xb audit` (piste 6E)
+
+Le skill `/vault-audit` et la commande CLI `xb audit` appellent tous deux `scripts/vault_audit.py` qui scanne le vault et produit un rapport Markdown dans `99-Meta/Audit-YYYY-MM-DD.md`.
+
+Détections MVP :
+
+- Notes orphelines (0 backlinks, 0 wikilinks sortants)
+- Notes anémiques (< 100 mots, hors code)
+- Doublons titre exact (même `stem`, dossiers différents)
+- Frontmatter incomplet (manque `statut` ou `source_knowledge`)
+- Notes `to-verify` avec `verification_date` > 30 jours
+- Tags incohérents (variantes de casse : `#ai`, `#AI`)
+- Wikilinks cassés (`[[X]]` où `X.md` n'existe pas)
+
+Flags :
+
+- `--migrate` : complète les frontmatter manquants avec les défauts (`statut: draft`, `source_knowledge: internal`, `verification_date: <today>`). Jamais d'écrasement.
+- `--json` : imprime le rapport JSON sur stdout (pour CI / scripting).
+- `--output <path>` : écrit le Markdown ailleurs que dans `99-Meta/`.
+
+Le script ignore `.git`, `.obsidian`, `.claude`, `.trash`, `node_modules`, `scripts` et `99-Meta` (pour ne pas s'auditer lui-même).
+
+### Skills canoniques (12) vs Skills Kepano (5 optionnels)
 
 | Catégorie | Source | Activé par défaut |
 |---|---|---|
-| **xais-brain core** (11) | `vault-template/.claude/skills/` | ✅ Oui |
+| **xais-brain core** (12) | `vault-template/.claude/skills/` | ✅ Oui |
 | **Kepano** (5) | `github.com/kepano/obsidian-skills` | ❌ Demandé en étape 9 |
 
 Les skills Kepano (CEO d'Obsidian) sont des compagnons de navigation : `obsidian-cli` (CLI Obsidian officiel), `obsidian-markdown` (wikilinks/callouts/embeds), `obsidian-bases` (vues table/card), `json-canvas` (canvas visuels), `defuddle` (extraction markdown propre depuis URLs).

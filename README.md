@@ -59,7 +59,7 @@ Pour utiliser plusieurs vaults : `XAIS_BRAIN_VAULT=~/autre-vault xb status`
 | **Obsidian** | App de notes locale, fichiers Markdown |
 | **Claude Code CLI** | L'IA qui lit et écrit dans ton vault |
 | **Python venv** (`~/.xais-brain-venv/`) | Isolé du système, pas de pollution |
-| **11 slash commands** | `/vault-setup` `/daily` `/tldr` `/file-intel` `/inbox-zero` `/memory-add` `/humanise` `/import-vault` `/project` `/client` `/clip` |
+| **12 slash commands** | `/vault-setup` `/daily` `/tldr` `/file-intel` `/inbox-zero` `/memory-add` `/humanise` `/import-vault` `/project` `/client` `/clip` `/vault-audit` |
 | **2 hooks FR** | SessionStart (contexte vault au démarrage) + UserPromptSubmit (liste les skills sur trigger FR) |
 | **Output style Coach FR** | Mode coach challengeant activable via `/output-style` |
 | **Permissions cadrées** | `settings.json` : écritures scopées aux dossiers du vault, `.git/` et `.claude/` protégés, `rm -rf` refusé |
@@ -70,7 +70,7 @@ Les skills sont installés à la fois dans le vault et globalement (`~/.claude/s
 
 ---
 
-## Les 11 slash commands
+## Les 12 slash commands
 
 | Commande | Ce qu'elle fait |
 |---|---|
@@ -85,6 +85,7 @@ Les skills sont installés à la fois dans le vault et globalement (`~/.claude/s
 | `/project` | Charge le contexte complet d'un side-project (`projects/[nom]/`) |
 | `/client` | Charge le contexte complet d'un client en prod (`clients/[nom]/`) |
 | `/clip` | Clippe une page web en note Markdown propre dans `inbox/` |
+| `/vault-audit` | Scanne le vault et génère un rapport d'hygiène dans `99-Meta/Audit-YYYY-MM-DD.md` |
 
 Tape n'importe laquelle dans Claude Code pour la déclencher.
 
@@ -107,15 +108,16 @@ mon-vault/
 ├── research/              ← notes de recherche, synthèses, idées
 ├── archive/               ← travail terminé (jamais supprimé)
 ├── 99-Meta/               ← piste d'audit du vault (à exclure du graphe Obsidian)
-│   ├── Audit.md           ← dernier rapport /vault-audit (piste 6E, à venir)
+│   ├── Audit.md           ← dernier rapport /vault-audit
 │   ├── Fact-Check-Log.md  ← log append-only des sources (alimenté par /clip, /file-intel)
 │   └── Session-Debriefs/  ← rétrospectives de session (alimenté par /tldr)
 ├── scripts/
 │   ├── file_intel.py      ← extracteurs PDF/DOCX/TXT/MD + orchestrateur
 │   ├── web_clip.py        ← web clipper URL → Markdown (inbox/)
+│   ├── vault_audit.py     ← audit hygiène du vault (orphelines, anémiques, etc.)
 │   └── providers/         ← gemini, claude, openai (interface commune)
 └── .claude/
-    ├── skills/            ← les 11 slash commands (+ Kepano si activé)
+    ├── skills/            ← les 12 slash commands (+ Kepano si activé)
     ├── hooks/             ← session-init.sh + skill-discovery.sh
     ├── output-styles/     ← coach.md (mode coach FR activable)
     ├── rules/             ← règles avancées (importables dans CLAUDE.md)
