@@ -4,7 +4,42 @@
 **Cible** : `xais-brain` (vault-template + skills + setup.sh + CLI `xb`)
 **Auteur** : Xavier / Claude
 **Date** : 2026-04-20
-**Statut** : PLAN — prêt à `/XD-build` piste par piste après validation des questions ouvertes (§8)
+**Dernière mise à jour** : 2026-04-21 (pivot stratégique, voir §0)
+**Statut** : **DÉCIDÉ** — prêt à `/XD-build` à partir de la piste 6B
+
+---
+
+## 0. Pivot stratégique — 2026-04-21
+
+### 0.1 Positionnement adopté
+
+> **xais-brain — Le second brain qui s'auto-audite.**
+> Un vault Obsidian piloté par Claude Code, pensé dès le départ pour que l'IA puisse le lire, l'enrichir et diagnostiquer sa santé.
+
+**Stratégie** : **A-façade + C-moteur**.
+- **Axe A (façade, narrative, README)** : self-auditing second brain — score de santé, dégradation détectée, remédiation assistée. C'est ce qu'on *vend*, c'est ce qui différencie vs. Obsidian+Copilot / Reor / Khoj / templates "Claude+Obsidian".
+- **Axe C (moteur, implémentation)** : AI-native by design — frontmatter enrichi, skills dédiés, CLAUDE.md vault optimisé LLM. C'est ce qui *rend l'audit possible* : sans ce moteur, rien à scorer.
+
+### 0.2 Conséquence sur l'ordre des pistes
+
+`/vault-audit` passe de **4e** à **2e** position : c'est la feature différenciante, elle doit tomber tôt pour qu'on itère dessus. L'ordre final **6B → 6E → 6D → 6F → 6C → 6G (→ 6H)** — détail §5.
+
+### 0.3 Décisions sur les 8 questions ouvertes (§8)
+
+| # | Question | Décision |
+|---|----------|----------|
+| Q1 | Ordre des pistes | **6B → 6E → 6D → 6F → 6C → 6G → (6H)** (ré-orienté Axe A : `/vault-audit` tôt) |
+| Q2 | Rétrocompat frontmatter | **Additif uniquement** + migration opt-in via `xb audit --migrate`. Jamais de champ renommé. |
+| Q3 | `/vault-audit` skill vs CLI | **Les deux** : skill `/vault-audit` (UX conversationnelle) + CLI `xb audit` (scripting, cron futurs) |
+| Q4 | Frontmatter incomplet dans `xb audit` | **Warning non bloquant** (rapport uniquement, exit code 0). On veut qu'un vault existant garde un score même imparfait. |
+| Q5 | Density rule (6H) | **GO** — renforce l'Axe A (détection notes anémiques / sous-liées). Planifiée, pas en MVP. |
+| Q6 | Pricing JSON (6F) | **Fichier config séparé** `.claude/pricing.json` — maj sans toucher au code. |
+| Q7 | Exclusion `99-Meta/` dans graphe Obsidian | **Doc manuelle d'abord** (README de `99-Meta/` existant). Config auto via `.obsidian/app.json` = v2. |
+| Q8 | `GUIDE.md` vs `CLAUDE.md` | **Séparation validée** — `CLAUDE.md` pour Claude, `GUIDE.md` didactique pour l'user. |
+
+### 0.4 Impact sur la narrative marketing (README)
+
+À la fin de la piste 6E, le README sera refait autour du score d'audit (héro visuel) et non plus autour de la liste des 11 skills. La piste 5 (demo GIF, `specs/todo/05-demo-gif-readme.md`) devra montrer **un audit qui tourne**, pas un setup.
 
 ---
 
@@ -469,41 +504,47 @@ Avant de lancer le traitement batch :
 
 ---
 
-## 5. Ordre d'implémentation
+## 5. Ordre d'implémentation (révisé 2026-04-21, Axe A)
 
-### Phase 1 — Fondations (débloquent le reste)
+**Principe directeur** : `/vault-audit` est la feature différenciante (Axe A). Elle arrive **le plus tôt possible** après le minimum technique qui la rend possible (frontmatter enrichi). Les autres pistes nourrissent ou polissent l'audit.
 
-1. **6A** `99-Meta/` folder — ~1-2h — pas de dépendance
-2. **6B** Frontmatter enrichi — ~2-3h — dépend de 6A
+### Phase 1 — Moteur AI-native (condition technique)
 
-### Phase 2 — Piste d'audit (cœur du pattern)
+1. **6A** ✅ **FAIT** (commit `fb0d8e0`) — `99-Meta/` folder
+2. **6B** Frontmatter enrichi — ~2-3h — débloque l'audit
 
-3. **6D** Fact-Check-Log auto — ~2h — dépend de 6A + 6B
-4. **6F** Budget annoncé — ~1h — indépendant, facile
-5. **6E** Skill `/vault-audit` + script — ~4-6h — dépend de 6A + 6B + 6D
+### Phase 2 — Feature différenciante
 
-### Phase 3 — UX qualité
+3. **6E** Skill `/vault-audit` + script + CLI `xb audit` — ~4-6h — **pivot business**
 
-6. **6C** Checkpoints humains — ~2-3h — bénéficie de 6F pour afficher le budget dans le checkpoint
+### Phase 3 — Enrichissement de l'audit
 
-### Phase 4 — Docs & polish
+4. **6D** Fact-Check-Log auto — ~2h — complète la traçabilité
+5. **6F** Budget annoncé — ~1h — UX batch + config `.claude/pricing.json`
 
-7. **6G** GUIDE.md — ~1-2h — dépend de l'état final
-8. **6H** Density rule — ~1h — **OPTIONNEL**, décision Xavier
+### Phase 4 — UX & docs
 
-**Total temps estimé** : 13-19h sur 4-5 sessions.
+6. **6C** Checkpoints humains — ~2-3h — bénéficie de 6F
+7. **6G** GUIDE.md — ~1-2h — reflète l'état final (dont audit)
 
-### Commits cibles (ordre chronologique)
+### Phase 5 — Renforcement Axe A
+
+8. **6H** Density rule — ~1h — **planifiée** (décision §0.3 : GO)
+
+**Total temps restant estimé (6B à 6H)** : 13-18h sur 4-5 sessions.
+
+### Commits cibles (ordre chronologique révisé)
 
 ```
-feat(vault): add 99-Meta/ audit trail folder (piste 6A)
-feat(skills): enrich frontmatter for clip, file-intel, inbox-zero (piste 6B)
-feat(skills): auto-populate Fact-Check-Log.md from clip & file-intel (piste 6D)
-feat(skills): announce budget before batch operations (piste 6F)
-feat(skills): add /vault-audit skill + xb audit CLI (piste 6E)
-feat(skills): add human checkpoints to batch skills (piste 6C)
-docs: add user-facing GUIDE.md (piste 6G)
-feat(skills): density rule wikilinks (piste 6H, optionnel)
+✅ feat(vault): add 99-Meta/ audit trail folder (piste 6A)           ← fb0d8e0
+→  feat(skills): enrich frontmatter for clip, file-intel, inbox-zero (piste 6B)
+   feat(skills): add /vault-audit skill + xb audit CLI (piste 6E)
+   feat(skills): auto-populate Fact-Check-Log.md from clip & file-intel (piste 6D)
+   feat(skills): announce batch budget from .claude/pricing.json (piste 6F)
+   feat(skills): add human checkpoints to batch skills (piste 6C)
+   docs: add user-facing GUIDE.md (piste 6G)
+   feat(skills): density rule wikilinks (piste 6H)
+   docs: rebrand README around vault audit score (Axe A narrative)
 ```
 
 ---
@@ -555,9 +596,9 @@ Créer une fixture `tests/fixtures/vault-legacy/` avec des notes **sans** les no
 
 ---
 
-## 8. Questions ouvertes pour Xavier
+## 8. Questions ouvertes pour Xavier — **TRANCHÉES 2026-04-21 (voir §0.3)**
 
-À trancher **AVANT** de lancer `/XD-build` sur la première piste.
+_Conservées pour historique. Les réponses font foi en §0.3._
 
 1. **Q1 — Ordre** : OK avec Phase 1 → 2 → 3 → 4 ci-dessus ? Ou préfères-tu commencer par `/vault-audit` (6E) en standalone ?
 2. **Q2 — Rétrocompat** : OK pour ajouter les nouveaux champs frontmatter en additif + flag `xb audit --migrate` opt-in pour compléter les notes existantes ? (vs migration auto au prochain `setup.sh`)
@@ -609,7 +650,8 @@ Créer une fixture `tests/fixtures/vault-legacy/` avec des notes **sans** les no
 
 ## 12. Prochaine action
 
-1. Xavier répond aux 8 questions §8.
-2. Selon réponses → `/XD-build specs/todo/06-integration-god-mode-patterns.md` commence par **piste 6A**.
-3. Chaque piste = 1 branche worktree + 1 commit atomique + 1 PR.
-4. Déplacement de ce fichier vers `specs/done/` uniquement quand **toutes** les pistes non-optionnelles sont mergées.
+1. ✅ Les 8 questions sont tranchées (§0.3).
+2. ✅ Piste 6A livrée (commit `fb0d8e0`).
+3. → **Piste 6B** — frontmatter enrichi pour `/clip`, `/file-intel`, `/inbox-zero`.
+4. Chaque piste = 1 commit atomique. Worktree optionnel si piste longue (6E).
+5. Déplacement de ce fichier vers `specs/done/` quand **toutes** les pistes non-optionnelles (6B-6G) sont mergées.
