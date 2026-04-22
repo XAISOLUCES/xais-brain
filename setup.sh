@@ -415,6 +415,9 @@ handle_existing_vault() {
 copy_vault_template() {
   safe_cp "$SCRIPT_DIR/vault-template/CLAUDE.md" "$VAULT_PATH/CLAUDE.md"
 
+  # GUIDE.md : doc didactique statique (pas personnalisé), toujours à jour
+  safe_cp "$SCRIPT_DIR/vault-template/GUIDE.md" "$VAULT_PATH/GUIDE.md"
+
   # MEMORY.md : seulement si neuf, ne jamais écraser un existant
   if [ "$IS_EXISTING_VAULT" = false ] || [ ! -f "$VAULT_PATH/MEMORY.md" ]; then
     safe_cp "$SCRIPT_DIR/vault-template/MEMORY.md" "$VAULT_PATH/MEMORY.md"
@@ -854,7 +857,7 @@ print_done() {
   echo "  - 12 slash commands : /vault-setup /daily /tldr /file-intel /inbox-zero /memory-add /humanise /import-vault /project /client /clip /vault-audit"
   echo "  - 2 hooks FR : session-init (contexte au démarrage) + skill-discovery"
   echo "  - Output style : Coach FR (tape /output-style pour l'activer)"
-  echo "  - CLAUDE.md template (perso via /vault-setup)"
+  echo "  - CLAUDE.md template (perso via /vault-setup) + GUIDE.md (guide utilisateur)"
   echo "  - vault-config.json (source de vérité structurée)"
   echo "  - Système de mémoire indexé (MEMORY.md + memory/)"
   echo "  - Scripts Python multi-LLM (Gemini/Claude/OpenAI)"

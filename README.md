@@ -317,6 +317,7 @@ python3 -m venv ~/.xais-brain-venv
 # 3. Vault
 mkdir -p ~/mon-vault/{inbox,daily,projects,research,archive,memory,99-Meta/Session-Debriefs,scripts/providers,.claude/skills,.claude/hooks,.claude/output-styles,.claude/rules}
 cp vault-template/CLAUDE.md ~/mon-vault/
+cp vault-template/GUIDE.md ~/mon-vault/
 cp vault-template/MEMORY.md ~/mon-vault/
 cp vault-template/vault-config.json ~/mon-vault/
 cp -r vault-template/99-Meta/README.md vault-template/99-Meta/Audit.md vault-template/99-Meta/Fact-Check-Log.md ~/mon-vault/99-Meta/

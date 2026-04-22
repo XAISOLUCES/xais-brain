@@ -2,6 +2,8 @@
 
 > Vault Obsidian piloté par Claude Code.
 > Lance `/vault-setup` pour personnaliser ce fichier (rôle, projets, objectifs).
+>
+> Guide utilisateur (didactique) : voir [GUIDE.md](GUIDE.md).
 
 ## Qui je suis
 
