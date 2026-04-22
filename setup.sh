@@ -904,10 +904,18 @@ open_obsidian_app() {
       # Safe : backup + atomic write + fallback silencieux sur open -a si ça foire.
 
       # Si Obsidian tourne déjà, il garde son état en RAM et écrasera notre fichier
-      # au prochain quit. On prévient l'utilisateur et on n'écrit pas pour rien.
+      # au prochain quit. On skip l'écriture (elle serait écrasée) et on donne
+      # des instructions claires à l'utilisateur.
       local obsidian_running=false
       if pgrep -x Obsidian &>/dev/null; then
         obsidian_running=true
+        echo ""
+        warn "Obsidian tourne déjà — je ne touche pas à son registre de vaults."
+        info "Pour ouvrir ton nouveau vault :"
+        info "  1. Dans Obsidian ouvert : File → Open vault → Open folder as vault → $VAULT_PATH"
+        info "  2. (ou ferme Obsidian avec Cmd+Q, relance, puis Open folder as vault)"
+        open -a Obsidian 2>/dev/null || true
+        return 0
       fi
 
       python3 - "$VAULT_PATH" <<'PYEOF' 2>/dev/null || true
@@ -956,13 +964,6 @@ except Exception:
             pass
     sys.exit(0)
 PYEOF
-
-      if [ "$obsidian_running" = true ]; then
-        echo ""
-        warn "Obsidian était déjà en cours d'exécution."
-        info "Quitte-le complètement (Cmd+Q) puis relance-le pour qu'il s'ouvre directement sur ton vault."
-        info "Sinon, ouvre ton vault manuellement : Open folder as vault → $VAULT_PATH"
-      fi
 
       open -a Obsidian 2>/dev/null || true
       ;;
