@@ -42,9 +42,12 @@ Si la clé manque → expliquer comment l'obtenir et stopper.
 Le script :
 
 - Lit chaque fichier du dossier (PDF, DOCX, TXT, MD)
+- **Affiche une estimation de budget avant exécution** (piste 6F) — nombre de fichiers, pages, durée attendue, coût estimé en USD selon `LLM_PROVIDER`. Les tarifs sont lus depuis `.claude/pricing.json` (modifiable sans toucher au code).
 - Envoie au LLM configuré via `LLM_PROVIDER`
 - Génère un fichier Markdown par source dans `inbox/`
 - Frontmatter automatique avec source, date, tags
+
+**Mode CI** : si `XAIS_BRAIN_CI=1`, le budget est affiché mais aucun prompt interactif n'est déclenché — le script enchaîne directement sur le traitement.
 
 ### 4. Confirmation
 

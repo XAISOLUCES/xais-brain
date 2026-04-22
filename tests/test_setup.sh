@@ -118,6 +118,12 @@ test_fresh_install() {
   assert_file "$TEST_VAULT/.claude/settings.json"
   assert_json "$TEST_VAULT/.claude/settings.json"
 
+  # Pricing (piste 6F — budget annoncé avant batch)
+  assert_file "$TEST_VAULT/.claude/pricing.json"
+  assert_json "$TEST_VAULT/.claude/pricing.json"
+  assert_contains "$TEST_VAULT/.claude/pricing.json" "gemini"
+  assert_contains "$TEST_VAULT/.claude/pricing.json" "tokens_per_pdf_page"
+
   # Compteur dynamique de skills
   local skill_count
   skill_count=$(find "$TEST_VAULT/.claude/skills" -maxdepth 1 -type d | tail -n +2 | wc -l | tr -d ' ')
@@ -155,6 +161,7 @@ test_scripts_python() {
   assert_file "$TEST_VAULT/scripts/file_intel.py"
   assert_file "$TEST_VAULT/scripts/web_clip.py"
   assert_file "$TEST_VAULT/scripts/vault_audit.py"
+  assert_file "$TEST_VAULT/scripts/budget.py"
   assert_file "$TEST_VAULT/scripts/providers/__init__.py"
   assert_file "$TEST_VAULT/scripts/providers/base.py"
   assert_file "$TEST_VAULT/scripts/providers/_prompts.py"

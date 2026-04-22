@@ -17,6 +17,7 @@ Variables d'env optionnelles (override des modèles) :
 """
 from __future__ import annotations
 
+import os
 import re
 import sys
 from datetime import date
@@ -28,6 +29,7 @@ from dotenv import load_dotenv
 # On ajoute le dossier du script au path pour pouvoir importer providers/
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+from budget import estimate_batch, format_budget_line  # noqa: E402
 from providers import get_provider  # noqa: E402
 from providers._prompts import source_type_from_filename  # noqa: E402
 from providers.base import LLMProvider  # noqa: E402
@@ -93,6 +95,28 @@ def load_env(output_dir: Path) -> None:
         load_dotenv(env_path)
     else:
         load_dotenv()  # fallback : cherche dans cwd
+
+
+# ── Budget pre-run (piste 6F) ─────────────────────────────────────────────────
+
+
+def announce_budget(files: list[Path], vault_dir: Path) -> None:
+    """Affiche l'estimation de budget avant traitement (piste 6F).
+
+    Lit `.claude/pricing.json` depuis le vault ; fallback silencieux sur des
+    valeurs hardcodées si absent. Toujours non-bloquant — si ``XAIS_BRAIN_CI=1``
+    (ou ``CI=1``), l'affichage est produit mais aucun prompt interactif n'est
+    lancé (le script continue sans attendre).
+    """
+    provider = (os.getenv("LLM_PROVIDER") or "gemini").strip().lower()
+    try:
+        estimate = estimate_batch(files, provider=provider, vault_dir=vault_dir)
+        line = format_budget_line(estimate, provider=provider)
+    except Exception:
+        # Estimation jamais bloquante — si elle casse, on continue le batch
+        return
+    print(line)
+    print()
 
 
 # ── Fact-Check-Log (piste 6D) ─────────────────────────────────────────────────
@@ -248,6 +272,9 @@ def main() -> int:
             file=sys.stderr,
         )
         return 1
+
+    # Piste 6F — annonce du budget (non-bloquant, affiché aussi en CI)
+    announce_budget(files, vault_dir=output_dir.parent)
 
     print(
         f"Traitement de {len(files)} fichier(s) "

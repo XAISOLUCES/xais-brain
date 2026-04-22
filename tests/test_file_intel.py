@@ -7,6 +7,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
 
 from file_intel import (
     EXTRACTORS,
+    announce_budget,
     append_fact_check_log,
     discover_files,
     extract_note_title,
@@ -195,3 +196,66 @@ def test_append_fact_check_log_multiple_entries_append_only(tmp_path):
     assert "[[Note B]]" in content
     # L'ordre est preserve : A avant B
     assert content.index("Note A") < content.index("Note B")
+
+
+# ── Piste 6F : budget annoncé avant batch ─────────────────────────────────────
+
+
+def test_announce_budget_prints_estimate(tmp_path, capsys, monkeypatch):
+    """announce_budget() affiche une estimation lisible avant traitement."""
+    monkeypatch.setenv("LLM_PROVIDER", "gemini")
+    f1 = tmp_path / "a.md"
+    f1.write_text("hello")
+    f2 = tmp_path / "b.md"
+    f2.write_text("world")
+
+    announce_budget([f1, f2], vault_dir=tmp_path)
+
+    captured = capsys.readouterr().out
+    assert "2 fichier(s)" in captured
+    assert "gemini" in captured
+    # Free tier → "gratuit"
+    assert "gratuit" in captured.lower()
+
+
+def test_announce_budget_never_raises_on_bad_files(tmp_path, capsys, monkeypatch):
+    """announce_budget() est non-bloquant : aucune exception ne remonte."""
+    monkeypatch.setenv("LLM_PROVIDER", "gemini")
+    # Fichier PDF bidon qui fera planter pypdf
+    bad = tmp_path / "broken.pdf"
+    bad.write_bytes(b"not-a-pdf")
+
+    # Doit ne pas lever
+    announce_budget([bad], vault_dir=tmp_path)
+
+
+def test_announce_budget_reads_user_pricing_json(tmp_path, capsys, monkeypatch):
+    """announce_budget() lit `.claude/pricing.json` du vault si présent."""
+    monkeypatch.setenv("LLM_PROVIDER", "claude")
+    claude_dir = tmp_path / ".claude"
+    claude_dir.mkdir()
+    # Pricing custom : Claude facturé 100 $/M tokens → coût non nul
+    import json as _json
+
+    (claude_dir / "pricing.json").write_text(
+        _json.dumps(
+            {
+                "providers": {
+                    "claude": {
+                        "model": "claude-haiku",
+                        "input_per_1m_usd": 100.0,
+                        "output_per_1m_usd": 500.0,
+                    }
+                }
+            }
+        )
+    )
+    f = tmp_path / "big.md"
+    f.write_text("x" * 4096)
+
+    announce_budget([f], vault_dir=tmp_path)
+
+    captured = capsys.readouterr().out
+    assert "claude" in captured
+    # Coût > 0 → doit apparaître dans la ligne ($ visible)
+    assert "$" in captured

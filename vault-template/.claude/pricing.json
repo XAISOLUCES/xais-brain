@@ -1,0 +1,34 @@
+{
+  "_comment": "Prix par million de tokens (USD). Mis à jour 2026-04-22. Source : pages officielles des providers. Piste 6F — xais-brain.",
+  "_last_updated": "2026-04-22",
+  "providers": {
+    "gemini": {
+      "model": "gemini-2.0-flash",
+      "input_per_1m_usd": 0.0,
+      "output_per_1m_usd": 0.0,
+      "note": "Free tier Google AI Studio — quota journalier limité"
+    },
+    "claude": {
+      "model": "claude-haiku-4-5-20251001",
+      "input_per_1m_usd": 1.0,
+      "output_per_1m_usd": 5.0,
+      "note": "Claude Haiku 4.5 — rapport qualité/prix optimal"
+    },
+    "openai": {
+      "model": "gpt-4o-mini",
+      "input_per_1m_usd": 0.15,
+      "output_per_1m_usd": 0.6,
+      "note": "GPT-4o mini — bon marché, qualité correcte"
+    }
+  },
+  "heuristics": {
+    "tokens_per_pdf_page": 750,
+    "paragraphs_per_docx_page": 30,
+    "tokens_per_docx_paragraph": 150,
+    "tokens_per_txt_kb": 250,
+    "output_tokens_per_file": 800,
+    "seconds_per_file_avg": 6,
+    "seconds_per_file_min": 3,
+    "seconds_per_file_max": 12
+  }
+}

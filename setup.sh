@@ -432,10 +432,11 @@ copy_vault_template() {
     safe_cp "$SCRIPT_DIR/vault-template/vault-config.json" "$VAULT_PATH/vault-config.json"
   fi
 
-  # Scripts Python (orchestrateur + providers + web clipper + vault audit)
+  # Scripts Python (orchestrateur + providers + web clipper + vault audit + budget)
   safe_cp "$SCRIPT_DIR/scripts/file_intel.py" "$VAULT_PATH/scripts/file_intel.py"
   safe_cp "$SCRIPT_DIR/scripts/web_clip.py" "$VAULT_PATH/scripts/web_clip.py"
   safe_cp "$SCRIPT_DIR/scripts/vault_audit.py" "$VAULT_PATH/scripts/vault_audit.py"
+  safe_cp "$SCRIPT_DIR/scripts/budget.py" "$VAULT_PATH/scripts/budget.py"
   for f in __init__.py base.py _prompts.py gemini_provider.py claude_provider.py openai_provider.py; do
     safe_cp "$SCRIPT_DIR/scripts/providers/$f" "$VAULT_PATH/scripts/providers/$f"
   done
@@ -496,6 +497,15 @@ step6_skills() {
     ok "settings.json installé (permissions + hooks déclarés)"
   else
     info "settings.json existant préservé"
+  fi
+
+  # pricing.json (piste 6F — tarifs LLM pour l'estimation de budget batch)
+  # Ne jamais écraser si existant — l'user peut avoir ajusté les prix.
+  if [ ! -f "$VAULT_PATH/.claude/pricing.json" ]; then
+    safe_cp "$SCRIPT_DIR/vault-template/.claude/pricing.json" "$VAULT_PATH/.claude/pricing.json"
+    ok "pricing.json installé (tarifs LLM pour /file-intel)"
+  else
+    info "pricing.json existant préservé"
   fi
 }
 

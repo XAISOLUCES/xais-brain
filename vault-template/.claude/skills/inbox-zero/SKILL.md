@@ -16,6 +16,7 @@ Vide `inbox/` en distribuant chaque fichier dans le bon dossier du vault.
 
 - Lire tous les fichiers de `inbox/` (récursif)
 - Si vide → annoncer *"Inbox déjà vide ✓"* et stopper
+- **Warning budget (piste 6F)** : si plus de 20 fichiers, annoncer *"⚠ inbox/ contient X fichiers. Le tri risque d'être long — utilise 'trie tout' pour le mode batch, ou traite par lots."* avant de continuer.
 
 ### 2. Pour chaque fichier
 
