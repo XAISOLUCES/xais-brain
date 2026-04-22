@@ -171,6 +171,7 @@ Tape n'importe laquelle dans Claude Code pour la déclencher.
 | **Python venv** (`~/.xais-brain-venv/`) | Isolé du système |
 | **12 slash commands** | Voir table ci-dessus |
 | **Guide utilisateur** (`GUIDE.md`) | Didactique 10 sections + FAQ, copié dans le vault |
+| **Quickstart** (`QUICKSTART.md`) | Plan de test post-install + cheat-sheet quotidien |
 | **2 hooks FR** | SessionStart (contexte vault) + UserPromptSubmit (liste skills sur trigger FR) |
 | **Output style Coach FR** | Mode coach challengeant via `/output-style` |
 | **Permissions cadrées** | Écritures scopées, `.git/`/`.claude/` protégés, `rm -rf` refusé |
@@ -329,6 +330,7 @@ python3 -m venv ~/.xais-brain-venv
 mkdir -p ~/mon-vault/{inbox,daily,projects,research,archive,memory,99-Meta/Session-Debriefs,scripts/providers,.claude/skills,.claude/hooks,.claude/output-styles,.claude/rules}
 cp vault-template/CLAUDE.md ~/mon-vault/
 cp vault-template/GUIDE.md ~/mon-vault/
+cp vault-template/QUICKSTART.md ~/mon-vault/
 cp vault-template/MEMORY.md ~/mon-vault/
 cp vault-template/vault-config.json ~/mon-vault/
 cp -r vault-template/99-Meta/README.md vault-template/99-Meta/Audit.md vault-template/99-Meta/Fact-Check-Log.md ~/mon-vault/99-Meta/

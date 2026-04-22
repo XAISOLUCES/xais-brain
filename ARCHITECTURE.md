@@ -48,6 +48,7 @@ xais-brain/
 ├── vault-template/                    ← Source canonique copiée dans chaque vault
 │   ├── CLAUDE.md                      ← Template d'instructions pour Claude
 │   ├── GUIDE.md                       ← Guide utilisateur didactique (piste 6G)
+│   ├── QUICKSTART.md                  ← Plan de test + cheat-sheet quotidien
 │   ├── MEMORY.md                      ← Index du système de mémoire
 │   ├── vault-config.json              ← Source de vérité structurée (user, llm, folders)
 │   │

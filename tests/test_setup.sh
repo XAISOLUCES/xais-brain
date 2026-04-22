@@ -91,6 +91,7 @@ test_fresh_install() {
   # Fichiers core
   assert_file "$TEST_VAULT/CLAUDE.md"
   assert_file "$TEST_VAULT/GUIDE.md"
+  assert_file "$TEST_VAULT/QUICKSTART.md"
   assert_file "$TEST_VAULT/MEMORY.md"
   assert_file "$TEST_VAULT/vault-config.json"
   assert_file "$TEST_VAULT/.env"
@@ -258,6 +259,7 @@ test_linux_specific() {
   assert_dir  "$TEST_VAULT/.obsidian"
   assert_file "$TEST_VAULT/CLAUDE.md"
   assert_file "$TEST_VAULT/GUIDE.md"
+  assert_file "$TEST_VAULT/QUICKSTART.md"
   assert_file "$TEST_VAULT/vault-config.json"
   assert_file "$TEST_VAULT/99-Meta/README.md"
 }
