@@ -174,12 +174,13 @@ Pas obligatoire — Claude s'adapte à ce qu'il trouve. Mais un `README.md` en t
 
 ## 7. Hygiène du vault
 
-Tous les PKM rouillent : orphelines, doublons, liens cassés, frontmatter incomplet. Sans audit, tu ne le vois qu'après des mois. **`xb audit`** scanne 7 symptômes :
+Tous les PKM rouillent : orphelines, doublons, liens cassés, frontmatter incomplet. Sans audit, tu ne le vois qu'après des mois. **`xb audit`** scanne 8 symptômes :
 
 | Détection | Ce que ça veut dire |
 |---|---|
 | Notes orphelines | 0 backlinks ET 0 wikilinks sortants — note isolée du reste |
 | Notes anémiques | < 100 mots — probablement un brouillon oublié |
+| Notes peu liées | < 3 wikilinks sortants (exclut `daily/`) — idée isolée à connecter |
 | Doublons (titre exact) | Même titre dans deux dossiers — à fusionner ou archiver |
 | Frontmatter incomplet | Manque `statut` ou `source_knowledge` — note non auditable |
 | `to-verify` > 30 jours | Note marquée "à vérifier" mais jamais revisitée |

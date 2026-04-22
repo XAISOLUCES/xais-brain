@@ -80,7 +80,7 @@ cmd_intel() {
 
   local cfg="$vault/vault-config.json"
   local inbox_dir
-  inbox_dir=$(python3 -c "import json; print(json.load(open('$cfg')).get('folders',{}).get('inbox','inbox'))" 2>/dev/null || echo "inbox")
+  inbox_dir=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("folders",{}).get("inbox","inbox"))' "$cfg" 2>/dev/null || echo "inbox")
 
   local python_bin="$HOME/.xais-brain-venv/bin/python3"
   if [ ! -x "$python_bin" ]; then
@@ -101,9 +101,9 @@ cmd_status() {
 
   # Lire les noms de dossiers depuis vault-config.json
   local inbox_dir daily_dir provider
-  inbox_dir=$(python3 -c "import json; print(json.load(open('$cfg')).get('folders',{}).get('inbox','inbox'))" 2>/dev/null || echo "inbox")
-  daily_dir=$(python3 -c "import json; print(json.load(open('$cfg')).get('folders',{}).get('daily','daily'))" 2>/dev/null || echo "daily")
-  provider=$(python3 -c "import json; print(json.load(open('$cfg')).get('llm',{}).get('provider','non configuré'))" 2>/dev/null || echo "?")
+  inbox_dir=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("folders",{}).get("inbox","inbox"))' "$cfg" 2>/dev/null || echo "inbox")
+  daily_dir=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("folders",{}).get("daily","daily"))' "$cfg" 2>/dev/null || echo "daily")
+  provider=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("llm",{}).get("provider","non configuré"))' "$cfg" 2>/dev/null || echo "?")
 
   local inbox_count
   inbox_count=$(find "$vault/$inbox_dir" -maxdepth 1 -type f 2>/dev/null | wc -l | tr -d ' ')
@@ -164,7 +164,7 @@ cmd_clip() {
 
   local cfg="$vault/vault-config.json"
   local inbox_dir
-  inbox_dir=$(python3 -c "import json; print(json.load(open('$cfg')).get('folders',{}).get('inbox','inbox'))" 2>/dev/null || echo "inbox")
+  inbox_dir=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("folders",{}).get("inbox","inbox"))' "$cfg" 2>/dev/null || echo "inbox")
 
   "$python_bin" "$vault/scripts/web_clip.py" "$url" "$vault/$inbox_dir"
 }

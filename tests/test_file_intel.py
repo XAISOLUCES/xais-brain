@@ -1,9 +1,7 @@
 """Tests unitaires pour file_intel.py."""
-import sys
 from pathlib import Path
 
-# Ajouter scripts/ au path
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
+# scripts/ est ajouté au sys.path via tests/conftest.py
 
 from file_intel import (
     EXTRACTORS,
@@ -366,6 +364,22 @@ def test_prompt_checkpoint_stdin_eof_returns_false(monkeypatch, capsys):
 
     monkeypatch.setattr("builtins.input", _raise_eof)
     assert prompt_checkpoint("Go ?", default_yes=True) is False
+
+
+def test_prompt_checkpoint_stdin_unrecognized_aborts_safely(monkeypatch, capsys):
+    """Une réponse ambiguë (ni yes/no/empty) retourne False — abort safe.
+
+    Avant : retournait default_yes (surprenant pour un prompt [Y/n] si
+    l'utilisateur tape "maybe" → on lançait un batch payant par erreur).
+    """
+    monkeypatch.delenv("XAIS_BRAIN_CI", raising=False)
+    monkeypatch.delenv("CI", raising=False)
+    monkeypatch.setattr("sys.stdin.isatty", lambda: True)
+    monkeypatch.setattr("builtins.input", lambda: "maybe later")
+    # Même avec default_yes=True, une réponse non reconnue doit abort.
+    assert prompt_checkpoint("Go ?", default_yes=True) is False
+    monkeypatch.setattr("builtins.input", lambda: "peut-etre")
+    assert prompt_checkpoint("Go ?", default_yes=False) is False
 
 
 def test_announce_budget_reads_user_pricing_json(tmp_path, capsys, monkeypatch):

@@ -158,8 +158,10 @@ def prompt_checkpoint(message: str, default_yes: bool = True) -> bool:
         return True
     if answer in {"n", "non", "no"}:
         return False
-    # Toute autre réponse → on respecte le défaut mais on le signale
-    return default_yes
+    # Toute autre réponse → abort safe (on ne lance PAS par défaut si l'utilisateur
+    # a tapé quelque chose d'ambigu comme "maybe" ou "later" — mieux vaut annuler
+    # et re-demander que lancer un batch payant par erreur).
+    return False
 
 
 # ── Budget pre-run (piste 6F) ─────────────────────────────────────────────────
@@ -169,16 +171,19 @@ def announce_budget(files: list[Path], vault_dir: Path) -> None:
     """Affiche l'estimation de budget avant traitement (piste 6F).
 
     Lit `.claude/pricing.json` depuis le vault ; fallback silencieux sur des
-    valeurs hardcodées si absent. Toujours non-bloquant — si ``XAIS_BRAIN_CI=1``
-    (ou ``CI=1``), l'affichage est produit mais aucun prompt interactif n'est
-    lancé (le script continue sans attendre).
+    valeurs hardcodées si absent. Cette fonction est toujours non-bloquante —
+    elle n'interroge jamais l'utilisateur (voir ``prompt_checkpoint`` pour
+    l'interaction, qui elle gère le mode CI via ``XAIS_BRAIN_CI=1`` / ``CI=1``).
     """
     provider = (os.getenv("LLM_PROVIDER") or "gemini").strip().lower()
     try:
         estimate = estimate_batch(files, provider=provider, vault_dir=vault_dir)
         line = format_budget_line(estimate, provider=provider)
-    except Exception:
-        # Estimation jamais bloquante — si elle casse, on continue le batch
+    except Exception as exc:
+        # Estimation jamais bloquante — si elle casse, on continue le batch.
+        # Log uniquement le type d'exception (pas le repr, qui pourrait
+        # embarquer une clé API dans certains SDK LLM).
+        print(f"  ⚠ budget estimate failed: {type(exc).__name__}", file=sys.stderr)
         return
     print(line)
     print()
@@ -257,8 +262,10 @@ def process_file(
     try:
         content = extractor(file_path)
     except Exception as exc:
+        # Log uniquement le type d'exception — le repr des erreurs d'extraction
+        # peut embarquer des chemins ou du contenu fichier, on reste prudent.
         print(
-            f"  ✗ Échec extraction {file_path.name} : {exc}",
+            f"  ✗ Échec extraction {file_path.name} : {type(exc).__name__}",
             file=sys.stderr,
         )
         return None
@@ -277,7 +284,13 @@ def process_file(
             source_filename=file_path.name,
         )
     except Exception as exc:
-        print(f"  ✗ Échec LLM {file_path.name} : {exc}", file=sys.stderr)
+        # Certaines SDK LLM embarquent les headers (incluant Authorization)
+        # dans leur repr d'exception — on ne log que le type pour éviter
+        # toute fuite de clé API dans les logs.
+        print(
+            f"  ✗ Échec LLM {file_path.name} : {type(exc).__name__}",
+            file=sys.stderr,
+        )
         return None
 
     out_path = output_dir / f"{slugify(file_path.name)}.md"
@@ -323,6 +336,8 @@ def main() -> int:
     try:
         provider = get_provider()
     except (ValueError, RuntimeError) as exc:
+        # get_provider() lève ValueError/RuntimeError avec des messages
+        # contrôlés (pas de clé dedans) ; on garde le message pour l'UX.
         print(f"Erreur config LLM : {exc}", file=sys.stderr)
         return 1
 

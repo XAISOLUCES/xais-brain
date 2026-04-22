@@ -1,6 +1,6 @@
 ---
 name: vault-audit
-description: Scanne le vault et genere un rapport d'hygiene (orphelines, anemiques, doublons, frontmatter, tags, liens casses, notes to-verify > 30j). Utiliser quand l'utilisateur dit audit vault, hygiene vault, sante vault, vault-audit, scan du vault.
+description: Scanne le vault et genere un rapport d'hygiene (orphelines, anemiques, notes peu liees, doublons, frontmatter, tags, liens casses, notes to-verify > 30j). Utiliser quand l'utilisateur dit audit vault, hygiene vault, sante vault, vault-audit, scan du vault.
 user-invocable: true
 disable-model-invocation: false
 model: haiku

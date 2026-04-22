@@ -24,10 +24,8 @@
   "heuristics": {
     "tokens_per_pdf_page": 750,
     "paragraphs_per_docx_page": 30,
-    "tokens_per_docx_paragraph": 150,
     "tokens_per_txt_kb": 250,
     "output_tokens_per_file": 800,
-    "seconds_per_file_avg": 6,
     "seconds_per_file_min": 3,
     "seconds_per_file_max": 12
   }

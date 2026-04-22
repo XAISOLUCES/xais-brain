@@ -1,18 +1,15 @@
 """Tests unitaires pour budget.py (piste 6F — budget annoncé avant batch)."""
 import json
-import sys
 from pathlib import Path
 
-# Ajouter scripts/ au path
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
+# scripts/ est ajouté au sys.path via tests/conftest.py
 
-from budget import (  # noqa: E402
+from budget import (
     BudgetEstimate,
     estimate_batch,
     estimate_file_input_tokens,
     estimate_file_pages,
     format_budget_line,
-    format_inbox_warning,
     load_pricing,
 )
 
@@ -230,12 +227,3 @@ def test_format_budget_line_under_one_cent():
     line = format_budget_line(estimate, provider="openai")
     # cost_high < 0.01 → affichage "< $0.01"
     assert "< $0.01" in line
-
-
-# ── format_inbox_warning ──────────────────────────────────────────────────────
-
-
-def test_inbox_warning_contains_count():
-    msg = format_inbox_warning(42)
-    assert "42" in msg
-    assert "long" in msg.lower() or "batch" in msg.lower()

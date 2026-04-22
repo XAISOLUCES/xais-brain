@@ -16,7 +16,7 @@ de fichiers d'Obsidian, pour ne pas parasiter la navigation quotidienne.
 
 ## Fichiers
 
-- `Audit.md` — dernier rapport du skill `/vault-audit` (orphelines, anémiques, doublons, frontmatter incomplet, tags incohérents, wikilinks cassés, notes `to-verify` > 30j).
+- `Audit.md` — dernier rapport du skill `/vault-audit` (orphelines, anémiques, peu liées, doublons, frontmatter incomplet, tags incohérents, wikilinks cassés, notes `to-verify` > 30j).
 - `Fact-Check-Log.md` — log append-only des sources vérifiées (alimenté par `/clip` et `/file-intel`).
 - `Session-Debriefs/` — rétrospectives de session courte (alimenté par `/tldr`).
 

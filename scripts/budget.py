@@ -41,10 +41,8 @@ _DEFAULT_PRICING: dict = {
     "heuristics": {
         "tokens_per_pdf_page": 750,
         "paragraphs_per_docx_page": 30,
-        "tokens_per_docx_paragraph": 150,
         "tokens_per_txt_kb": 250,
         "output_tokens_per_file": 800,
-        "seconds_per_file_avg": 6,
         "seconds_per_file_min": 3,
         "seconds_per_file_max": 12,
     },
@@ -134,12 +132,10 @@ def estimate_file_input_tokens(file_path: Path, pages: int, heuristics: dict) ->
     if suffix == ".pdf":
         return pages * heuristics.get("tokens_per_pdf_page", 750)
     if suffix == ".docx":
-        # pages DOCX est déjà normalisé — on multiplie par le ratio PDF équivalent
-        # (≈ paragraphes × tokens/paragraphe) ; on réutilise pages × tokens_per_pdf_page
-        # pour cohérence (1 page DOCX ≈ 1 page PDF en terme de tokens).
-        per_para = heuristics.get("tokens_per_docx_paragraph", 150)
-        per_page = heuristics.get("paragraphs_per_docx_page", 30)
-        return pages * per_page * per_para // 10  # ajusté pour rester en ordre de grandeur PDF
+        # 1 page DOCX ≈ 1 page PDF en densité de tokens : on réutilise le même
+        # ratio que PDF pour éviter la sous-estimation de ~40 % constatée
+        # précédemment avec la formule `pages * per_page * per_para // 10`.
+        return pages * heuristics.get("tokens_per_pdf_page", 750)
     if suffix in {".txt", ".md"}:
         try:
             size_kb = max(1, file_path.stat().st_size // 1024)
@@ -251,15 +247,3 @@ def format_budget_line(estimate: BudgetEstimate, provider: str) -> str:
     )
     detail = f"Estimation : {time_str}, {cost_str} (provider: {provider})."
     return f"{header}\n{detail}"
-
-
-def format_inbox_warning(files_count: int) -> str:
-    """Warning budget grossier pour /inbox-zero si >20 fichiers.
-
-    Pas de coût (l'inbox-zero est manuel côté LLM Claude Code, pas un script
-    batch avec tokens mesurables). On annonce juste le volume.
-    """
-    return (
-        f"⚠ inbox/ contient {files_count} fichiers. Le tri risque d'être long.\n"
-        "  Utilise le mode batch ('trie tout') pour accélérer, ou traite par lots."
-    )

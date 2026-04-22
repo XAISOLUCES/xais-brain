@@ -6,11 +6,10 @@ frontmatter incomplet, stale to-verify, tags incoherents, wikilinks casses.
 from __future__ import annotations
 
 import json
-import sys
 from datetime import date, timedelta
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
+# scripts/ est ajouté au sys.path via tests/conftest.py
 
 from vault_audit import (
     DENSITY_MIN_WIKILINKS,
@@ -267,6 +266,47 @@ def test_audit_finds_stale(tmp_path: Path):
     result = audit(vault)
     paths = [n.rel_path for n in result["stale"]]
     assert any("stale.md" in p for p in paths)
+
+
+def test_stale_ignores_archived(tmp_path: Path):
+    """Une note `statut: archived` avec verification_date ancienne NE doit
+    PAS apparaitre dans detect_stale_to_verify (bug prod handoff 010)."""
+    vault = tmp_path / "vault"
+    old_date = (date.today() - timedelta(days=90)).isoformat()
+    write_note(vault, "research/archived-old.md", f"""---
+statut: archived
+source_knowledge: internal
+verification_date: {old_date}
+---
+# Archived old
+
+Cette note est archivee depuis longtemps et ne doit pas polluer le rapport
+stale. Lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod
+tempor incididunt ut labore et dolore magna aliqua minim veniam quis nostrud
+exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+""")
+    # Une autre note to-verify stale pour s'assurer que la detection fonctionne
+    write_note(vault, "research/still-stale.md", f"""---
+statut: to-verify
+source_knowledge: web-checked
+verification_date: {old_date}
+---
+# Still stale
+
+Cette note devrait rester dans le rapport. Lorem ipsum dolor sit amet
+consectetur adipiscing elit sed do eiusmod tempor incididunt ut labore et
+dolore magna aliqua minim veniam quis nostrud exercitation ullamco laboris
+nisi ut aliquip ex ea commodo consequat duis aute irure dolor.
+""")
+
+    result = audit(vault)
+    paths = [n.rel_path for n in result["stale"]]
+    assert not any("archived-old.md" in p for p in paths), (
+        "Une note archivee ne doit pas apparaitre dans stale"
+    )
+    assert any("still-stale.md" in p for p in paths), (
+        "Une note to-verify stale doit toujours apparaitre"
+    )
 
 
 def test_audit_finds_tag_conflicts(tmp_path: Path):

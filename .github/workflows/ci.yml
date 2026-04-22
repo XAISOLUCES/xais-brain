@@ -42,8 +42,8 @@ jobs:
 
       - name: Run Python unit tests
         run: |
-          ~/.xais-brain-venv/bin/pip install pytest
-          ~/.xais-brain-venv/bin/pytest tests/test_file_intel.py -v
+          ~/.xais-brain-venv/bin/pip install "pytest>=7.0"
+          ~/.xais-brain-venv/bin/pytest tests/ -v
 
   test-linux:
     runs-on: ubuntu-latest
@@ -80,5 +80,5 @@ jobs:
 
       - name: Run Python unit tests
         run: |
-          ~/.xais-brain-venv/bin/pip install pytest
-          ~/.xais-brain-venv/bin/pytest tests/test_file_intel.py -v
+          ~/.xais-brain-venv/bin/pip install "pytest>=7.0"
+          ~/.xais-brain-venv/bin/pytest tests/ -v

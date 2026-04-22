@@ -340,11 +340,12 @@ cp vault-template/.claude/hooks/*.sh ~/mon-vault/.claude/hooks/
 chmod +x ~/mon-vault/.claude/hooks/*.sh
 cp vault-template/.claude/output-styles/coach.md ~/mon-vault/.claude/output-styles/
 cp vault-template/.claude/settings.json ~/mon-vault/.claude/
-cp scripts/file_intel.py scripts/web_clip.py scripts/vault_audit.py ~/mon-vault/scripts/
+cp scripts/file_intel.py scripts/web_clip.py scripts/vault_audit.py scripts/budget.py ~/mon-vault/scripts/
 cp scripts/providers/* ~/mon-vault/scripts/providers/
 
 # 4. Config LLM
 cp .env.example ~/mon-vault/.env
+chmod 600 ~/mon-vault/.env
 # Édite ~/mon-vault/.env pour ajouter ta clé API
 ```
 

@@ -1,11 +1,16 @@
 """Tests pour web_clip.py."""
-import sys
 from datetime import date
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
+# scripts/ est ajouté au sys.path via tests/conftest.py
 
-from web_clip import slugify, ContentExtractor, build_frontmatter, append_fact_check_log
+from web_clip import (
+    ContentExtractor,
+    _is_safe_url,
+    append_fact_check_log,
+    build_frontmatter,
+    slugify,
+)
 
 
 def test_slugify():
@@ -101,3 +106,37 @@ def test_append_fact_check_log_noop_when_file_missing(tmp_path):
     # Aucun 99-Meta/ cree
     append_fact_check_log(tmp_path, "Test", "https://x.y", "2026-04-21")
     assert not (tmp_path / "99-Meta").exists()
+
+
+# ── SSRF (is_safe_url) ────────────────────────────────────────────────────────
+
+
+def test_is_safe_url_rejects_file_scheme():
+    """Un scheme file:// doit être refusé (SSRF classique)."""
+    assert _is_safe_url("file:///etc/passwd") is False
+
+
+def test_is_safe_url_rejects_non_http_schemes():
+    """Schemes exotiques (gopher, ftp, data) refusés."""
+    assert _is_safe_url("gopher://example.com") is False
+    assert _is_safe_url("ftp://example.com") is False
+    assert _is_safe_url("data:text/plain,hello") is False
+
+
+def test_is_safe_url_rejects_loopback():
+    """127.0.0.1 et localhost doivent être refusés."""
+    assert _is_safe_url("http://127.0.0.1/admin") is False
+    # localhost peut résoudre vers ::1 ou 127.0.0.1 — les deux sont rejetés
+    assert _is_safe_url("http://localhost:8080/api") is False
+
+
+def test_is_safe_url_accepts_public_https():
+    """Un domaine public en https doit être accepté."""
+    # example.com est un domaine réservé IANA pour la doc, toujours public
+    assert _is_safe_url("https://example.com/") is True
+
+
+def test_is_safe_url_rejects_missing_hostname():
+    """Une URL sans hostname valide est refusée."""
+    assert _is_safe_url("http:///no-host") is False
+    assert _is_safe_url("not-a-url") is False

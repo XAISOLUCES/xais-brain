@@ -218,12 +218,12 @@ def detect_incomplete_frontmatter(notes: list[Note]) -> list[tuple[Note, list[st
 
 
 def detect_stale_to_verify(notes: list[Note], days: int = STALE_TO_VERIFY_DAYS) -> list[Note]:
-    """Notes statut != verified avec verification_date > `days` jours."""
+    """Notes statut != verified/archived avec verification_date > `days` jours."""
     cutoff = date.today() - timedelta(days=days)
     stale: list[Note] = []
     for note in notes:
         statut = str(note.frontmatter.get("statut", "")).lower()
-        if statut == "verified":
+        if statut in {"verified", "archived"}:
             continue
         v_date = note.frontmatter.get("verification_date")
         if not v_date:

@@ -10,7 +10,7 @@
 
 `xais-brain` est un installateur idempotent qui transforme un dossier vide (ou un vault Obsidian existant) en second cerveau piloté par Claude Code. Le repo contient trois couches :
 
-1. **Orchestrateur** — `setup.sh` : 9 étapes séquentielles, détecte les vaults existants, ne casse rien
+1. **Orchestrateur** — `setup.sh` : 10 étapes séquentielles, détecte les vaults existants, ne casse rien
 2. **Source canonique** — `vault-template/` : tout ce qui est copié dans le vault de l'utilisateur (CLAUDE.md, skills, hooks, output-styles, config)
 3. **Moteur Python** — `scripts/file_intel.py` + `scripts/providers/` : pipeline LLM multi-provider pour `/file-intel`
 
@@ -28,9 +28,9 @@ xais-brain/
 ├── LICENSE                            ← MIT
 ├── .gitignore
 ├── .env.example                       ← Template des clés API
-├── requirements.txt                   ← pypdf, python-docx, google-genai, anthropic, openai, python-dotenv, pyyaml
+├── requirements.txt                   ← pypdf, python-docx, google-genai, anthropic, openai, python-dotenv
 │
-├── setup.sh                           ← Orchestrateur d'install (9 étapes)
+├── setup.sh                           ← Orchestrateur d'install (10 étapes)
 │
 ├── scripts/                           ← Moteurs Python (file-intel, web-clip, vault-audit, budget)
 │   ├── file_intel.py                  ← Extracteurs PDF/DOCX/TXT/MD + main
@@ -209,7 +209,7 @@ Les skills sont **aussi** installés dans `~/.claude/skills/` (global) pour êtr
                      │ curl | bash
                      ▼
        ┌─────────────────────────────┐
-       │      setup.sh (9 étapes)    │
+       │      setup.sh (10 étapes)    │
        │   bootstrap → install →     │
        │   vault → skills → LLM      │
        └──────────────┬──────────────┘
@@ -246,7 +246,7 @@ Les skills sont **aussi** installés dans `~/.claude/skills/` (global) pour êtr
 
 ---
 
-## Flux : `setup.sh` (9 étapes)
+## Flux : `setup.sh` (10 étapes)
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐

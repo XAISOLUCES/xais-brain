@@ -23,11 +23,16 @@
       "Bash(find:*)",
       "Bash(git:*)",
       "Bash(python3:*)",
-      "Bash(~/.xais-brain-venv/bin/python3:*)"
+      "Bash(~/.xais-brain-venv/bin/python3:*)",
+      "Bash(mkdir:*)",
+      "Bash(mv:*)",
+      "Bash(chmod:*)",
+      "Bash(cp:*)"
     ],
     "deny": [
       "Edit(.claude/**)",
       "Write(.git/**)",
+      "Bash(rm:*)",
       "Bash(rm -rf:*)"
     ]
   },
@@ -45,7 +50,11 @@
     "UserPromptSubmit": [
       {
         "hooks": [
-          { "type": "command", "command": ".claude/hooks/skill-discovery.sh", "timeout": 5000 }
+          {
+            "type": "command",
+            "command": ".claude/hooks/skill-discovery.sh",
+            "timeout": 5000
+          }
         ]
       }
     ]

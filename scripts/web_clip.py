@@ -9,7 +9,9 @@ Genere :
 """
 from __future__ import annotations
 
+import ipaddress
 import re
+import socket
 import sys
 from datetime import date
 from html.parser import HTMLParser
@@ -17,6 +19,46 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 import httpx
+
+
+_ALLOWED_SCHEMES = {"http", "https"}
+
+
+def _is_safe_url(url: str) -> bool:
+    """Vérifie qu'une URL est sûre à fetcher (protection SSRF basique).
+
+    Refuse :
+    - Les schemes autres que http/https (file://, gopher://, ftp://...).
+    - Les hostnames qui résolvent vers des IP privées, loopback, link-local
+      ou réservées (127.0.0.1, 10.x, 192.168.x, 169.254.x, ::1...).
+
+    Retourne True uniquement si TOUTES les IP résolues sont publiques.
+    """
+    parsed = urlparse(url)
+    if parsed.scheme not in _ALLOWED_SCHEMES:
+        return False
+    host = parsed.hostname
+    if not host:
+        return False
+    try:
+        infos = socket.getaddrinfo(host, None)
+    except socket.gaierror:
+        return False
+    for info in infos:
+        try:
+            ip = ipaddress.ip_address(info[4][0])
+        except ValueError:
+            return False
+        if (
+            ip.is_private
+            or ip.is_loopback
+            or ip.is_link_local
+            or ip.is_reserved
+            or ip.is_multicast
+            or ip.is_unspecified
+        ):
+            return False
+    return True
 
 
 class ContentExtractor(HTMLParser):
@@ -70,7 +112,14 @@ class ContentExtractor(HTMLParser):
 
 
 def fetch_and_extract(url: str) -> tuple[str, str]:
-    """Fetch une URL et retourne (title, markdown_content)."""
+    """Fetch une URL et retourne (title, markdown_content).
+
+    Lève ``ValueError`` si l'URL échoue la validation SSRF (_is_safe_url).
+    """
+    if not _is_safe_url(url):
+        raise ValueError(
+            f"URL refusée (scheme non http/https, ou cible IP privée/loopback) : {url}"
+        )
     resp = httpx.get(
         url,
         follow_redirects=True,

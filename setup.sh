@@ -558,6 +558,7 @@ step7_llm_config() {
     4)
       info "Skip — édite $VAULT_PATH/.env quand tu seras prêt"
       safe_cp "$SCRIPT_DIR/.env.example" "$VAULT_PATH/.env"
+      chmod 600 "$VAULT_PATH/.env"
       return 0
       ;;
     *)
@@ -583,11 +584,15 @@ step7_llm_config() {
   # Trim whitespace (le copier-coller ajoute parfois des espaces)
   API_KEY="$(echo "$API_KEY" | tr -d '[:space:]')"
 
-  # Écriture sécurisée (printf gère les caractères spéciaux)
-  {
-    printf 'LLM_PROVIDER=%s\n' "$llm_name"
-    printf '%s=%s\n' "$key_var" "$API_KEY"
-  } > "$VAULT_PATH/.env"
+  # Écriture sécurisée (umask 077 + chmod 600 garantissent -rw-------)
+  (
+    umask 077
+    {
+      printf 'LLM_PROVIDER=%s\n' "$llm_name"
+      printf '%s=%s\n' "$key_var" "$API_KEY"
+    } > "$VAULT_PATH/.env"
+  )
+  chmod 600 "$VAULT_PATH/.env"
 
   # Merge le provider dans vault-config.json (source de vérité structurée)
   if command -v python3 &>/dev/null; then
@@ -629,6 +634,10 @@ PYEOF
   else
     warn "Clé non fournie — ajoute-la dans $VAULT_PATH/.env avant /file-intel"
   fi
+
+  # Évacue la clé de la mémoire shell (sécu : si l'user Ctrl+C après cette
+  # étape, la clé ne reste pas accessible via `env` ou le dump de la session).
+  unset API_KEY
 }
 
 # === Étape 8 : Import fichiers ===============================================
@@ -701,7 +710,12 @@ step9_kepano() {
   echo "  Téléchargement..."
   local tmp
   tmp="$(mktemp -d)"
-  if git clone --depth=1 https://github.com/kepano/obsidian-skills.git "$tmp/obsidian-skills" &>/dev/null; then
+  # Supply chain : pin un SHA précis pour qu'un compromis futur du repo
+  # Kepano (ou un rebase aggressif) ne casse pas les futurs installs.
+  # SHA pinné = HEAD de kepano/obsidian-skills au 2026-04-22.
+  local kepano_pin="fa1e131a014576ff8f8919f191a7ca8d8fded39b"
+  if git clone https://github.com/kepano/obsidian-skills.git "$tmp/obsidian-skills" &>/dev/null \
+      && (cd "$tmp/obsidian-skills" && git checkout "$kepano_pin" &>/dev/null); then
     for skill_dir in "$tmp/obsidian-skills/skills"/*/; do
       local skill_name
       skill_name="$(basename "$skill_dir")"

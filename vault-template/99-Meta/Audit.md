@@ -64,3 +64,11 @@ _Aucune détection pour le moment._
 > Notes draft ou non vérifiées depuis plus d'un mois.
 
 _Aucune détection pour le moment._
+
+---
+
+## Notes peu liées (0)
+
+> Moins de 3 wikilinks sortants (exclut `daily/`) — idée isolée à connecter.
+
+_Aucune détection pour le moment._

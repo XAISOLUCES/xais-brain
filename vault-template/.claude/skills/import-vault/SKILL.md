@@ -70,7 +70,7 @@ find . -mindepth 1 -maxdepth 1 -type d \
 
 **Étape E — Scanner `.claude/skills/` existant** : lister tous les skills présents. Classifier en 3 catégories :
 
-- **Canoniques xais-brain** (à ne pas toucher, déjà présents) : `daily, file-intel, humanise, import-vault, inbox-zero, memory-add, tldr, vault-setup`
+- **Canoniques xais-brain** (à ne pas toucher, déjà présents) : `clip, daily, client, file-intel, humanise, import-vault, inbox-zero, memory-add, project, tldr, vault-audit, vault-setup`
 - **Kepano optionnels** (à préserver) : `defuddle, json-canvas, obsidian-bases, obsidian-cli, obsidian-markdown`
 - **Custom utilisateur** (à préserver **absolument** et lister dans le nouveau `CLAUDE.md`) : tout autre nom
 
@@ -188,7 +188,7 @@ cp CLAUDE.md "CLAUDE.md.backup-$TS"
 - Les `customFolders` listés avec un commentaire "conservés hors mapping xais-brain"
 - La note `memory.md` si applicable (voir 3.3)
 - Section "Slash commands disponibles" listant :
-  - Les 8 skills xais-brain core
+  - Les 12 skills xais-brain core
   - Une sous-section "Custom (préservés)" avec les skills custom détectés en phase 1
 - Section "Historique" avec une référence **en prose** au backup :
 
@@ -219,7 +219,7 @@ Copier depuis `${XAIS_BRAIN_REPO:-$HOME/Dev/XAIS_2ND_BRAIN/xais-brain}/vault-tem
 
 **3.6 — Skills xais-brain (mode additif strict)**
 
-Liste canonique : `daily, file-intel, humanise, import-vault, inbox-zero, memory-add, tldr, vault-setup`.
+Liste canonique : `clip, daily, client, file-intel, humanise, import-vault, inbox-zero, memory-add, project, tldr, vault-audit, vault-setup`.
 
 Pour chaque skill canonique :
 
@@ -283,7 +283,7 @@ Mapping :
 
 Préservé :
   CLAUDE.md original → CLAUDE.md.backup-<TS>
-  3 skills custom intacts : client, project, workflow
+  2 skills custom intacts : workflow, my-writing-style
   memory.md (racine, non migré — voir note dans CLAUDE.md)
   3 customFolders : 02_Areas/, personal/, scripts/
 
@@ -293,7 +293,7 @@ Ajouté :
   .claude/hooks/ (session-init + skill-discovery, +x)
   .claude/output-styles/coach.md
   .claude/settings.json
-  4 skills xais-brain manquants : humanise, import-vault, inbox-zero, memory-add
+  N skills xais-brain manquants (sur 12 canoniques) : clip, humanise, import-vault, inbox-zero, memory-add, vault-audit, ...
 
 Prochaines étapes :
   → /vault-setup pour personnaliser CLAUDE.md (rôle, priorités, style)
