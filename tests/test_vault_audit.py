@@ -13,6 +13,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
 
 from vault_audit import (
+    DENSITY_MIN_WIKILINKS,
     audit,
     parse_frontmatter,
     count_words,
@@ -25,6 +26,7 @@ from vault_audit import (
     detect_stale_to_verify,
     detect_tag_conflicts,
     detect_broken_wikilinks,
+    detect_low_density,
     migrate_frontmatter,
     load_note,
     iter_markdown_files,
@@ -408,3 +410,154 @@ Body content.
     assert rc == 0
     new_raw = p.read_text(encoding="utf-8")
     assert "statut: draft" in new_raw
+
+
+# ── Piste 6H : density rule wikilinks ─────────────────────────────────────────
+
+
+# >= 100 mots pour passer au-dessus du seuil anemique
+_LONG_BODY = " ".join(
+    [
+        "Lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod",
+        "tempor incididunt ut labore et dolore magna aliqua minim veniam quis",
+        "nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo",
+        "consequat duis aute irure dolor in reprehenderit voluptate velit esse",
+        "cillum dolore eu fugiat nulla pariatur excepteur sint occaecat cupidatat",
+        "non proident sunt in culpa qui officia deserunt mollit anim id est laborum",
+        "sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium",
+        "doloremque laudantium totam rem aperiam eaque ipsa quae ab illo inventore",
+        "veritatis et quasi architecto beatae vitae dicta sunt explicabo nemo enim",
+        "ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit sed.",
+    ]
+)
+
+
+def test_detect_low_density_flags_substantial_note_with_few_links(tmp_path: Path):
+    """Une note >= 100 mots avec 0 wikilinks doit etre flaguee low-density."""
+    vault = tmp_path / "vault"
+    write_note(vault, "research/isolated.md", f"""---
+statut: draft
+source_knowledge: internal
+---
+# Isolated
+
+{_LONG_BODY}
+""")
+
+    files = iter_markdown_files(vault)
+    notes = [load_note(f, vault) for f in files]
+    low = detect_low_density(notes)
+    assert any("research/isolated.md" in n.rel_path for n in low)
+
+
+def test_detect_low_density_ignores_anemic_notes(tmp_path: Path):
+    """Les notes anemiques (<100 mots) ne doivent PAS remonter en low-density.
+
+    Evite le double comptage : detect_anemic les attrape deja.
+    """
+    vault = tmp_path / "vault"
+    write_note(vault, "daily/tiny.md", """---
+statut: draft
+source_knowledge: internal
+---
+# Tiny
+
+Trop court pour compter.
+""")
+    files = iter_markdown_files(vault)
+    notes = [load_note(f, vault) for f in files]
+    low = detect_low_density(notes)
+    assert not any("tiny.md" in n.rel_path for n in low)
+
+
+def test_detect_low_density_ignores_daily_notes(tmp_path: Path):
+    """Les notes dans daily/ sont exclues meme si longues et peu liees."""
+    vault = tmp_path / "vault"
+    write_note(vault, "daily/2026-04-22.md", f"""---
+statut: draft
+source_knowledge: internal
+---
+# Journal du jour
+
+{_LONG_BODY}
+""")
+    files = iter_markdown_files(vault)
+    notes = [load_note(f, vault) for f in files]
+    low = detect_low_density(notes)
+    assert not any("daily/" in n.rel_path for n in low)
+
+
+def test_detect_low_density_accepts_well_linked_notes(tmp_path: Path):
+    """Une note avec >= DENSITY_MIN_WIKILINKS wikilinks n'est pas flaguee."""
+    vault = tmp_path / "vault"
+    links = " ".join(f"[[Concept{i}]]" for i in range(DENSITY_MIN_WIKILINKS))
+    write_note(vault, "research/well-linked.md", f"""---
+statut: draft
+source_knowledge: internal
+---
+# Well linked
+
+{_LONG_BODY}
+
+Voir aussi {links}.
+""")
+    files = iter_markdown_files(vault)
+    notes = [load_note(f, vault) for f in files]
+    low = detect_low_density(notes)
+    assert not any("well-linked.md" in n.rel_path for n in low)
+
+
+def test_detect_low_density_custom_threshold(tmp_path: Path):
+    """Le seuil min_links est parametrable."""
+    vault = tmp_path / "vault"
+    write_note(vault, "research/one-link.md", f"""---
+statut: draft
+source_knowledge: internal
+---
+# One link
+
+{_LONG_BODY}
+
+Voir [[ConceptUnique]].
+""")
+    files = iter_markdown_files(vault)
+    notes = [load_note(f, vault) for f in files]
+
+    # Avec seuil 2 : flaguee (1 < 2)
+    low_strict = detect_low_density(notes, min_links=2)
+    assert any("one-link.md" in n.rel_path for n in low_strict)
+
+    # Avec seuil 1 : acceptee (1 >= 1)
+    low_lax = detect_low_density(notes, min_links=1)
+    assert not any("one-link.md" in n.rel_path for n in low_lax)
+
+
+def test_audit_report_contains_low_density_section(tmp_path: Path):
+    """Le rapport Markdown contient une section 'Notes peu liees'."""
+    vault = _build_vault(tmp_path)
+    result = audit(vault)
+    md = result["report_md"]
+    assert "## Notes peu liees" in md
+    assert f"< {DENSITY_MIN_WIKILINKS} wikilinks sortants" in md
+
+
+def test_audit_json_contains_low_density(tmp_path: Path):
+    """Le rapport JSON expose la cle low_density et density_threshold."""
+    vault = _build_vault(tmp_path)
+    result = audit(vault)
+    rj = result["report_json"]
+    assert "low_density" in rj
+    assert rj["density_threshold"] == DENSITY_MIN_WIKILINKS
+    # Chaque entree a path/wikilinks/words
+    for entry in rj["low_density"]:
+        assert "path" in entry
+        assert "wikilinks" in entry
+        assert "words" in entry
+
+
+def test_audit_returns_low_density_key(tmp_path: Path):
+    """audit() expose 'low_density' dans son dict resultat."""
+    vault = _build_vault(tmp_path)
+    result = audit(vault)
+    assert "low_density" in result
+    assert isinstance(result["low_density"], list)

@@ -482,25 +482,25 @@ Avant de lancer le traitement batch :
 
 ---
 
-### Piste 6H — Density rule wikilinks (OPTIONNEL)
+### Piste 6H — Density rule wikilinks
 
 **Taille** : S (1h)
 **Dépendances** : 6B
 **Débloque** : rien
-**Statut** : **À décider avec Xavier (§8 Q5)**
+**Statut** : **LIVRÉE 2026-04-22** (décision §0.3 Q5 : GO)
 
-**Livrables** (si on la fait) :
+**Livrables** :
 
-1. `/file-intel` prompt (`scripts/providers/_prompts.py`) — ajouter ligne :
-   > "Inclus **au moins 3 wikilinks sortants** `[[Concept]]` vers des pages pertinentes, chacun justifié par une phrase."
-2. Frontmatter enrichi (piste 6B étendu) — ajouter optionnellement :
+1. `/file-intel` prompt (`scripts/providers/_prompts.py`) — ajouté : "Inclus **au moins 3 wikilinks sortants** `[[Concept]]` vers des pages pertinentes, chacun justifié par la phrase qui l'entoure". Clause de flexibilité si aucun concept ne se prête au lien.
+2. Frontmatter enrichi — ajout des champs **optionnels** :
    ```yaml
    liens_forts: [[Page1]], [[Page2]]
    liens_opposition: [[Page3]]
    ```
-3. `/vault-audit` — nouveau check : notes avec 0 wikilinks sortants.
+3. `/vault-audit` — nouvelle détection `detect_low_density()` : notes ≥ 100 mots avec < 3 wikilinks sortants, exclues `daily/` (par nature peu liées). Seuil paramétrable `DENSITY_MIN_WIKILINKS = 3`. Section dédiée dans le rapport Markdown et clé `low_density` + `density_threshold` dans le JSON.
+4. Tests : 8 nouveaux dans `test_vault_audit.py` (détection + exclusions + seuils + rapport) et 4 dans `test_file_intel.py` (prompt contient density rule + `liens_forts` + `liens_opposition` + flexibilité).
 
-**Décision recommandée** : **SKIP au MVP**. Ajouter quand le pattern émerge naturellement dans l'usage de Xavier.
+**Résultat** : 97 tests Python verts, 57 asserts bash verts. Section "Notes peu liees" visible dans l'audit MD + exposée dans le JSON.
 
 ---
 
@@ -658,6 +658,6 @@ _Conservées pour historique. Les réponses font foi en §0.3._
 6. ✅ Piste 6F livrée — budget annoncé avant batch via `.claude/pricing.json` (ajout 2026-04-22, 74 tests Python + 56 asserts bash verts).
 7. ✅ Piste 6C livrée — checkpoints humains dans `/file-intel` (stdin bloquant + bypass `XAIS_BRAIN_CI`/`CI`/non-tty) et section batch dans `/inbox-zero` (ajout 2026-04-22, 85 tests Python + 56 asserts bash verts).
 8. ✅ Piste 6G livrée — `vault-template/GUIDE.md` (~345 lignes, 10 sections + FAQ) + lien depuis `CLAUDE.md` + copie via `setup.sh` + asserts `test_setup.sh` (ajout 2026-04-22).
-9. Toutes les pistes non-optionnelles (6A à 6G) sont livrées. Reste 6H (density rule) marquée **optionnelle** / GO décision §0.3 — à trancher avant d'entamer.
-10. Chaque piste = 1 commit atomique. Worktree optionnel si piste longue.
-11. Déplacement de ce fichier vers `specs/done/` quand 6H est livrée OU quand on décide explicitement de la reporter à une spec 07 dédiée.
+9. ✅ Piste 6H livrée — density rule wikilinks : prompt `/file-intel` demande ≥ 3 `[[Concept]]` + frontmatter `liens_forts`/`liens_opposition` + nouvelle détection `detect_low_density` dans `vault_audit.py` (seuil 3, exclusion `daily/`). 12 nouveaux tests (97 Python + 57 bash tous verts, ajout 2026-04-22).
+10. **Toutes les pistes (6A à 6H) sont livrées.** Le plan peut être déplacé vers `specs/done/`.
+11. Chaque piste = 1 commit atomique. Worktree optionnel si piste longue.

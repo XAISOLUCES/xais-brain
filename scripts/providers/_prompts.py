@@ -48,6 +48,8 @@ statut: to-verify
 importance: medium
 date: {today}
 tags: [tag1, tag2, tag3]
+liens_forts: ["[[Concept1]]", "[[Concept2]]"]
+liens_opposition: ["[[ContreIdee]]"]
 type: résumé
 ---
 
@@ -81,11 +83,22 @@ Règles :
 - Pas de remplissage ni de blabla générique
 - Si le contenu est court ou trivial, fais une note courte
 - Si le contenu est dense, structure-le avec des sections claires
+- Inclus **au moins 3 wikilinks sortants** `[[Concept]]` vers des pages
+  pertinentes du vault (concepts, personnes, projets, théories évoquées).
+  Chaque wikilink doit être justifié par la phrase qui l'entoure — pas de
+  lien décoratif. Préfère les noms de concepts en PascalCase ou Title Case
+  (`[[AlignmentProblem]]`, `[[Karl Popper]]`). Si vraiment aucun concept
+  ne se prête au lien, tu peux en mettre moins — mais c'est rare.
+- Dans le frontmatter, `liens_forts` liste 2-5 wikilinks vers les concepts
+  centraux traités par la note. `liens_opposition` est optionnel : liste
+  les concepts avec lesquels la note est en tension ou qu'elle contredit.
+  Laisse ces champs vides (`liens_forts: []`) si rien de pertinent.
 - Donne directement le Markdown — n'inclus PAS de bloc ```markdown autour
 - Le frontmatter (---) doit être la PREMIÈRE ligne de ta réponse
 - Ne modifie PAS les valeurs de `source`, `source_file`, `source_knowledge`,
   `verification_date`, `statut`, `importance` dans le frontmatter : recopie-les
-  telles quelles. Seul `tags` et le corps de la note sont à adapter.
+  telles quelles. Seuls `tags`, `liens_forts`, `liens_opposition` et le corps
+  de la note sont à adapter.
 
 Contenu source ({source_filename}) :
 

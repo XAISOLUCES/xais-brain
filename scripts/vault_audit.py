@@ -37,6 +37,9 @@ from typing import Any
 ANEMIC_THRESHOLD_WORDS = 100
 STALE_TO_VERIFY_DAYS = 30
 REQUIRED_FRONTMATTER_FIELDS = ("statut", "source_knowledge")
+# Piste 6H : densite minimale de wikilinks sortants pour une note "substantielle"
+# (i.e. au-dessus du seuil anemique). Assoupli par rapport a god-mode (7 -> 3).
+DENSITY_MIN_WIKILINKS = 3
 
 # Dossiers ignores (meta, config, build)
 EXCLUDED_DIRS = {
@@ -267,6 +270,33 @@ def detect_broken_wikilinks(notes: list[Note]) -> list[tuple[Note, list[str]]]:
     return broken
 
 
+def detect_low_density(
+    notes: list[Note],
+    min_links: int = DENSITY_MIN_WIKILINKS,
+    anemic_threshold: int = ANEMIC_THRESHOLD_WORDS,
+) -> list[Note]:
+    """Piste 6H : notes substantielles (>= anemic_threshold mots) avec < min_links wikilinks sortants.
+
+    Exclut :
+        - les notes anemiques (deja detectees par detect_anemic — pas de double-bruit)
+        - les notes purement daily (daily/ dans le chemin) : par nature peu liees
+        - les templates 99-Meta (deja exclus par iter_markdown_files)
+
+    Le but : reperer les notes "longues mais isolees" dans le graphe — typique
+    d'un import LLM qui a rate l'injection de wikilinks.
+    """
+    out: list[Note] = []
+    for note in notes:
+        if note.word_count < anemic_threshold:
+            continue
+        # Daily notes : non concernees (format journalier, liens souvent implicites)
+        if note.rel_path.startswith("daily/") or note.rel_path.startswith("daily\\"):
+            continue
+        if len(note.wikilinks) < min_links:
+            out.append(note)
+    return out
+
+
 # ── Migration (complete frontmatter manquant) ─────────────────────────────────
 
 
@@ -345,6 +375,7 @@ def render_report(
     stale: list[Note],
     tag_conflicts: list[tuple[str, list[tuple[str, int]]]],
     broken: list[tuple[Note, list[str]]],
+    low_density: list[Note] | None = None,
 ) -> str:
     """Genere le rapport Markdown humain-lisible."""
     today = date.today().isoformat()
@@ -420,6 +451,24 @@ def render_report(
     else:
         lines.append("_Aucun wikilink casse._")
 
+    # Piste 6H : notes substantielles mais peu liees
+    low_density = low_density or []
+    lines.extend([
+        "",
+        "---",
+        "",
+        f"## Notes peu liees (< {DENSITY_MIN_WIKILINKS} wikilinks sortants) ({len(low_density)})",
+        "",
+        f"> Notes >= {ANEMIC_THRESHOLD_WORDS} mots avec moins de {DENSITY_MIN_WIKILINKS} wikilinks. "
+        "Candidates pour enrichir le graphe (piste 6H).",
+        "",
+    ])
+    if low_density:
+        for n in low_density:
+            lines.append(f"- [ ] [[{n.rel_path}]] — {len(n.wikilinks)} wikilink(s) sortant(s), {n.word_count} mots")
+    else:
+        lines.append("_Toutes les notes substantielles sont correctement liees._")
+
     lines.append("")
     return "\n".join(lines)
 
@@ -435,8 +484,10 @@ def build_json_report(
     stale: list[Note],
     tag_conflicts: list[tuple[str, list[tuple[str, int]]]],
     broken: list[tuple[Note, list[str]]],
+    low_density: list[Note] | None = None,
 ) -> dict[str, Any]:
     """Version JSON serialisable du rapport, pour scripting / CI."""
+    low_density = low_density or []
     return {
         "vault": str(vault),
         "date": date.today().isoformat(),
@@ -463,6 +514,15 @@ def build_json_report(
         "broken_wikilinks": [
             {"path": n.rel_path, "targets": miss} for n, miss in broken
         ],
+        "low_density": [
+            {
+                "path": n.rel_path,
+                "wikilinks": len(n.wikilinks),
+                "words": n.word_count,
+            }
+            for n in low_density
+        ],
+        "density_threshold": DENSITY_MIN_WIKILINKS,
     }
 
 
@@ -502,15 +562,16 @@ def audit(vault: Path, migrate: bool = False) -> dict[str, Any]:
     stale = detect_stale_to_verify(notes)
     tag_conflicts = detect_tag_conflicts(notes)
     broken = detect_broken_wikilinks(notes)
+    low_density = detect_low_density(notes)
 
     elapsed = time.monotonic() - start
     report_md = render_report(
         vault, notes, elapsed, orphans, anemic, duplicates,
-        incomplete, stale, tag_conflicts, broken,
+        incomplete, stale, tag_conflicts, broken, low_density,
     )
     report_json = build_json_report(
         vault, notes, elapsed, orphans, anemic, duplicates,
-        incomplete, stale, tag_conflicts, broken,
+        incomplete, stale, tag_conflicts, broken, low_density,
     )
     report_json["migrated"] = migrated
 
@@ -524,6 +585,7 @@ def audit(vault: Path, migrate: bool = False) -> dict[str, Any]:
         "stale": stale,
         "tag_conflicts": tag_conflicts,
         "broken": broken,
+        "low_density": low_density,
         "report_md": report_md,
         "report_json": report_json,
         "migrated": migrated,
@@ -584,6 +646,7 @@ def main(argv: list[str] | None = None) -> int:
         + len(result["stale"])
         + len(result["tag_conflicts"])
         + sum(len(m) for _, m in result["broken"])
+        + len(result["low_density"])
     )
 
     print(f"Audit termine : {notes_count} notes scannees, {issues} points d'attention.")

@@ -108,6 +108,47 @@ def test_prompt_preserves_instructions_no_modify():
     assert "Ne modifie PAS les valeurs de `source`" in prompt or "recopie-les" in prompt
 
 
+# ── Piste 6H : density rule wikilinks dans le prompt ──────────────────────────
+
+
+def test_prompt_contains_density_rule_instruction():
+    """Le prompt doit demander au LLM d'inclure au moins 3 wikilinks sortants."""
+    prompt = build_summarization_prompt(
+        content="Un contenu quelconque", source_filename="doc.pdf"
+    )
+    # Instruction explicite : 3 wikilinks minimum
+    assert "au moins 3 wikilinks" in prompt.lower()
+    # Exemple de syntaxe wikilink present
+    assert "[[Concept]]" in prompt or "[[" in prompt
+
+
+def test_prompt_contains_liens_forts_field():
+    """Le frontmatter genere doit inclure `liens_forts` (piste 6H)."""
+    prompt = build_summarization_prompt(
+        content="x", source_filename="doc.pdf"
+    )
+    assert "liens_forts" in prompt
+
+
+def test_prompt_contains_liens_opposition_field():
+    """Le frontmatter genere doit inclure `liens_opposition` (piste 6H)."""
+    prompt = build_summarization_prompt(
+        content="x", source_filename="doc.pdf"
+    )
+    assert "liens_opposition" in prompt
+
+
+def test_prompt_density_rule_allows_flexibility():
+    """La density rule doit etre assouplie : le LLM peut en mettre moins si
+    aucun concept ne se prete au lien."""
+    prompt = build_summarization_prompt(
+        content="x", source_filename="doc.pdf"
+    )
+    # Mention d'une flexibilite (mots-cles : "rare", "vraiment", "moins")
+    low = prompt.lower()
+    assert "rare" in low or "vraiment" in low or "en mettre moins" in low
+
+
 # ── Piste 6D : Fact-Check-Log auto-alimenté ───────────────────────────────────
 
 

@@ -19,6 +19,8 @@ Scanne le vault et produit un rapport d'hygiene actionnable dans `99-Meta/Audit-
 - **Notes `to-verify` > 30j** : via `verification_date`
 - **Tags incoherents** : variantes de casse (`#ai` vs `#AI`)
 - **Wikilinks casses** : `[[X]]` ou `X.md` n'existe pas
+- **Notes peu liees** : note >= 100 mots avec moins de 3 wikilinks sortants
+  (piste 6H — density rule). Daily notes exclues par convention.
 
 ## Workflow
 
@@ -52,6 +54,9 @@ Selon ce qui ressort :
 - **Beaucoup d'orphelines dans `inbox/`** : proposer `/inbox-zero`.
 - **Beaucoup d'anemiques dans `daily/`** : normal, ne pas alerter.
 - **Wikilinks casses** : lister les 5 premiers et proposer de les renommer.
+- **Notes peu liees (< 3 wikilinks)** : suggerer d'ouvrir la note et d'ajouter
+  2-3 liens `[[Concept]]` vers les concepts centraux. Utile pour les notes
+  issues de `/file-intel` sans injection automatique de liens.
 
 ## Options
 

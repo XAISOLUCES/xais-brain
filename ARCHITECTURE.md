@@ -578,6 +578,7 @@ Détections MVP :
 - Notes `to-verify` avec `verification_date` > 30 jours
 - Tags incohérents (variantes de casse : `#ai`, `#AI`)
 - Wikilinks cassés (`[[X]]` où `X.md` n'existe pas)
+- **Notes peu liées** (piste 6H) : notes ≥ 100 mots avec moins de 3 wikilinks sortants. Exclut `daily/` (par convention peu liées). Le prompt `/file-intel` demande au LLM d'injecter au moins 3 `[[Concept]]` pour faire émerger le graphe.
 
 Flags :
 
