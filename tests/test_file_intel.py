@@ -7,10 +7,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
 
 from file_intel import (
     EXTRACTORS,
+    _is_ci_mode,
     announce_budget,
     append_fact_check_log,
     discover_files,
     extract_note_title,
+    prompt_checkpoint,
     slugify,
 )
 from providers._prompts import (
@@ -227,6 +229,102 @@ def test_announce_budget_never_raises_on_bad_files(tmp_path, capsys, monkeypatch
 
     # Doit ne pas lever
     announce_budget([bad], vault_dir=tmp_path)
+
+
+# ── Piste 6C : checkpoints humains ────────────────────────────────────────────
+
+
+def test_is_ci_mode_xais_brain_ci(monkeypatch):
+    """XAIS_BRAIN_CI=1 → mode CI activé."""
+    monkeypatch.setenv("XAIS_BRAIN_CI", "1")
+    monkeypatch.delenv("CI", raising=False)
+    assert _is_ci_mode() is True
+
+
+def test_is_ci_mode_ci_env(monkeypatch):
+    """CI=1 (GitHub Actions) → mode CI activé."""
+    monkeypatch.delenv("XAIS_BRAIN_CI", raising=False)
+    monkeypatch.setenv("CI", "true")
+    assert _is_ci_mode() is True
+
+
+def test_is_ci_mode_off(monkeypatch):
+    """Aucune variable définie → mode CI désactivé."""
+    monkeypatch.delenv("XAIS_BRAIN_CI", raising=False)
+    monkeypatch.delenv("CI", raising=False)
+    assert _is_ci_mode() is False
+
+
+def test_is_ci_mode_explicit_zero(monkeypatch):
+    """XAIS_BRAIN_CI=0 → mode CI désactivé (valeur explicitement falsy)."""
+    monkeypatch.setenv("XAIS_BRAIN_CI", "0")
+    monkeypatch.delenv("CI", raising=False)
+    assert _is_ci_mode() is False
+
+
+def test_prompt_checkpoint_ci_returns_default_yes(monkeypatch, capsys):
+    """En mode CI, le prompt retourne default_yes sans attendre stdin."""
+    monkeypatch.setenv("XAIS_BRAIN_CI", "1")
+    assert prompt_checkpoint("Go ?", default_yes=True) is True
+    out = capsys.readouterr().out
+    assert "CI" in out
+
+
+def test_prompt_checkpoint_ci_returns_default_no(monkeypatch, capsys):
+    """En mode CI avec default_yes=False, retourne False sans attendre."""
+    monkeypatch.setenv("XAIS_BRAIN_CI", "1")
+    assert prompt_checkpoint("Go ?", default_yes=False) is False
+
+
+def test_prompt_checkpoint_non_tty_returns_default(monkeypatch, capsys):
+    """Sans TTY (stdin non interactif), retourne default_yes sans bloquer."""
+    monkeypatch.delenv("XAIS_BRAIN_CI", raising=False)
+    monkeypatch.delenv("CI", raising=False)
+    # stdin n'est pas un TTY dans pytest → isatty() retourne False
+    assert prompt_checkpoint("Go ?", default_yes=True) is True
+    assert prompt_checkpoint("Go ?", default_yes=False) is False
+
+
+def test_prompt_checkpoint_stdin_yes(monkeypatch, capsys):
+    """Une réponse 'oui' stdin retourne True."""
+    monkeypatch.delenv("XAIS_BRAIN_CI", raising=False)
+    monkeypatch.delenv("CI", raising=False)
+    # Simule un TTY avec une réponse prête
+    monkeypatch.setattr("sys.stdin.isatty", lambda: True)
+    monkeypatch.setattr("builtins.input", lambda: "oui")
+    assert prompt_checkpoint("Go ?", default_yes=False) is True
+
+
+def test_prompt_checkpoint_stdin_no(monkeypatch, capsys):
+    """Une réponse 'non' stdin retourne False même si default=True."""
+    monkeypatch.delenv("XAIS_BRAIN_CI", raising=False)
+    monkeypatch.delenv("CI", raising=False)
+    monkeypatch.setattr("sys.stdin.isatty", lambda: True)
+    monkeypatch.setattr("builtins.input", lambda: "non")
+    assert prompt_checkpoint("Go ?", default_yes=True) is False
+
+
+def test_prompt_checkpoint_stdin_empty_uses_default(monkeypatch, capsys):
+    """Une réponse vide (juste Entrée) retourne default_yes."""
+    monkeypatch.delenv("XAIS_BRAIN_CI", raising=False)
+    monkeypatch.delenv("CI", raising=False)
+    monkeypatch.setattr("sys.stdin.isatty", lambda: True)
+    monkeypatch.setattr("builtins.input", lambda: "")
+    assert prompt_checkpoint("Go ?", default_yes=True) is True
+    assert prompt_checkpoint("Go ?", default_yes=False) is False
+
+
+def test_prompt_checkpoint_stdin_eof_returns_false(monkeypatch, capsys):
+    """Un EOF (Ctrl+D) retourne False (user a coupé net → safe to abort)."""
+    monkeypatch.delenv("XAIS_BRAIN_CI", raising=False)
+    monkeypatch.delenv("CI", raising=False)
+    monkeypatch.setattr("sys.stdin.isatty", lambda: True)
+
+    def _raise_eof():
+        raise EOFError()
+
+    monkeypatch.setattr("builtins.input", _raise_eof)
+    assert prompt_checkpoint("Go ?", default_yes=True) is False
 
 
 def test_announce_budget_reads_user_pricing_json(tmp_path, capsys, monkeypatch):

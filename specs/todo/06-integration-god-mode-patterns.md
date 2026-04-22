@@ -656,6 +656,7 @@ _Conservées pour historique. Les réponses font foi en §0.3._
 4. ✅ Piste 6E livrée — skill `/vault-audit` + `scripts/vault_audit.py` + `xb audit` CLI (22 tests verts).
 5. ✅ Piste 6D livrée — Fact-Check-Log auto-alimenté par `/clip` (existant) et `/file-intel` (ajout 2026-04-22, 31 tests verts).
 6. ✅ Piste 6F livrée — budget annoncé avant batch via `.claude/pricing.json` (ajout 2026-04-22, 74 tests Python + 56 asserts bash verts).
-7. → **Piste 6C** — Checkpoints humains (bénéficie du budget de 6F).
-8. Chaque piste = 1 commit atomique. Worktree optionnel si piste longue.
-9. Déplacement de ce fichier vers `specs/done/` quand **toutes** les pistes non-optionnelles (6C-6G) sont mergées.
+7. ✅ Piste 6C livrée — checkpoints humains dans `/file-intel` (stdin bloquant + bypass `XAIS_BRAIN_CI`/`CI`/non-tty) et section batch dans `/inbox-zero` (ajout 2026-04-22, 85 tests Python + 56 asserts bash verts).
+8. → **Piste 6G** — `GUIDE.md` utilisateur final (documente l'état final : audit, budget, checkpoints).
+9. Chaque piste = 1 commit atomique. Worktree optionnel si piste longue.
+10. Déplacement de ce fichier vers `specs/done/` quand **toutes** les pistes non-optionnelles (6G) sont mergées.

@@ -35,7 +35,29 @@ Lire le fichier (ou son frontmatter + premières lignes si gros), puis classifie
 
 **Par défaut** (interactif) : pour chaque fichier, propose la destination et demande confirmation rapide (`[Y/n/skip]`).
 
-**Si l'utilisateur dit "tout d'un coup", "batch", ou "trie tout"** : exécute en batch et liste les déplacements à la fin.
+**Si l'utilisateur dit "tout d'un coup", "batch", ou "trie tout"** : passe en mode batch avec **checkpoint humain** avant de déplacer quoi que ce soit (piste 6C).
+
+### 3.bis Checkpoint humain (mode batch — piste 6C)
+
+Avant tout `mv`, même en mode batch :
+
+1. **Plan numéroté** — affiche un plan du tri proposé sous forme de tableau :
+   ```
+   Plan de tri (12 fichiers) :
+    1. inbox/note-xai.md          → projects/xais-brain/notes/
+    2. inbox/article-karpathy.md  → research/
+    3. inbox/draft-post.md        → inbox/ (ambigu)
+    ...
+   ```
+2. **STOP** — demande explicitement : **"OK pour lancer le tri ? (oui / modif X→Y / non)"**
+3. **Attendre une réponse explicite** :
+   - `oui` / vide → exécuter.
+   - `modif 3 → research/` → ajuster la ligne 3 du plan puis redemander.
+   - `non` → annuler, ne rien déplacer.
+4. **Mode CI** : si `XAIS_BRAIN_CI=1` ou `CI=1` est défini dans l'environnement, assume "oui" et exécute sans attendre. Même chose si le tri est lancé depuis un script non interactif.
+5. Après exécution, passer à l'étape 5 (récap final).
+
+Ne jamais sauter ce checkpoint tant que le mode batch est actif — c'est le garde-fou principal contre un `mv` massif accidentel.
 
 ### 4. Déplacer (jamais copier)
 

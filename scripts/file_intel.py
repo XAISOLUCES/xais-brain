@@ -97,6 +97,71 @@ def load_env(output_dir: Path) -> None:
         load_dotenv()  # fallback : cherche dans cwd
 
 
+# ── Checkpoints humains (piste 6C) ────────────────────────────────────────────
+
+
+def _is_ci_mode() -> bool:
+    """Retourne True si on est en mode CI/non-interactif.
+
+    Respecte ``XAIS_BRAIN_CI=1`` (documenté dans le plan god-mode) et
+    ``CI=1`` (utilisé par la plupart des runners : GitHub Actions, GitLab).
+    Toute valeur non vide autre que "0" est considérée comme vraie.
+    """
+    for var in ("XAIS_BRAIN_CI", "CI"):
+        val = os.getenv(var, "").strip().lower()
+        if val and val not in {"0", "false", "no"}:
+            return True
+    return False
+
+
+def prompt_checkpoint(message: str, default_yes: bool = True) -> bool:
+    """Affiche un checkpoint humain et attend une réponse sur stdin.
+
+    Piste 6C — god-mode patterns. Le pattern est :
+
+    1. Affiche ``message`` suivi de ``[Y/n]`` (ou ``[y/N]`` si default_yes=False).
+    2. En mode CI (``XAIS_BRAIN_CI=1`` ou ``CI=1``) → retourne ``default_yes``
+       sans attendre.
+    3. Si stdin n'est pas un TTY (pipe, redirection) → retourne ``default_yes``
+       pour ne jamais pendre.
+    4. Lit une ligne et retourne True si oui/o/y/yes/ok ou défaut vide, False sinon.
+
+    Args:
+        message: question à afficher (ex. "OK pour lancer ?").
+        default_yes: valeur retournée si l'utilisateur tape Entrée sans répondre,
+            ou si on est en mode CI.
+
+    Returns:
+        True si l'utilisateur valide, False sinon.
+    """
+    suffix = "[Y/n]" if default_yes else "[y/N]"
+    print(f"\n{message} {suffix} ", end="", flush=True)
+
+    if _is_ci_mode():
+        print("(CI → auto)")
+        return default_yes
+
+    if not sys.stdin.isatty():
+        # Pas de TTY disponible (script piped, test, etc.) → ne pas bloquer
+        print("(non-tty → auto)")
+        return default_yes
+
+    try:
+        answer = input().strip().lower()
+    except (EOFError, KeyboardInterrupt):
+        print()
+        return False
+
+    if not answer:
+        return default_yes
+    if answer in {"o", "oui", "y", "yes", "ok"}:
+        return True
+    if answer in {"n", "non", "no"}:
+        return False
+    # Toute autre réponse → on respecte le défaut mais on le signale
+    return default_yes
+
+
 # ── Budget pre-run (piste 6F) ─────────────────────────────────────────────────
 
 
@@ -276,16 +341,43 @@ def main() -> int:
     # Piste 6F — annonce du budget (non-bloquant, affiché aussi en CI)
     announce_budget(files, vault_dir=output_dir.parent)
 
+    # Piste 6C — Checkpoint 1 : valider le plan avant de bruler des tokens
+    if not prompt_checkpoint("OK pour lancer le traitement ?", default_yes=True):
+        print("Annulé par l'utilisateur.")
+        return 1
+
     print(
         f"Traitement de {len(files)} fichier(s) "
         f"avec {provider.__class__.__name__}..."
     )
     print()
 
+    # Piste 6C — Checkpoint 2 : pause après les 2-3 premiers fichiers pour
+    # inspecter les résultats avant de continuer le batch. N'a de sens que si
+    # le batch est assez gros pour justifier un contrôle qualité intermédiaire.
+    preview_count = 3 if len(files) >= 6 else 0
+
     success = 0
-    for file in files:
+    for idx, file in enumerate(files):
         if process_file(file, output_dir, provider):
             success += 1
+
+        # Checkpoint 2 : juste après le preview, avant de continuer
+        if preview_count and idx + 1 == preview_count:
+            remaining = len(files) - preview_count
+            print()
+            print(
+                f"→ Preview : {preview_count} fichier(s) traité(s) dans {output_dir}."
+            )
+            if not prompt_checkpoint(
+                f"Continuer avec les {remaining} fichier(s) restant(s) ?",
+                default_yes=True,
+            ):
+                print("Batch interrompu après le preview.")
+                print(
+                    f"✓ {success}/{len(files)} fichier(s) traité(s) → {output_dir}"
+                )
+                return 1
 
     print()
     print(f"✓ {success}/{len(files)} fichier(s) traité(s) → {output_dir}")

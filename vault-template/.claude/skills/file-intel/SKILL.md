@@ -43,11 +43,14 @@ Le script :
 
 - Lit chaque fichier du dossier (PDF, DOCX, TXT, MD)
 - **Affiche une estimation de budget avant exécution** (piste 6F) — nombre de fichiers, pages, durée attendue, coût estimé en USD selon `LLM_PROVIDER`. Les tarifs sont lus depuis `.claude/pricing.json` (modifiable sans toucher au code).
+- **Demande deux checkpoints humains** (piste 6C) :
+  - **Checkpoint 1** — juste après le budget, avant de bruler des tokens : `OK pour lancer le traitement ? [Y/n]`. Réponse vide = oui par défaut, `non` annule tout.
+  - **Checkpoint 2** — après les 3 premiers fichiers traités (seulement si le batch contient 6 fichiers ou plus) : permet d'inspecter les notes générées avant d'attaquer le reste. `Continuer avec les N restant(s) ? [Y/n]`. Un `non` arrête le batch proprement.
 - Envoie au LLM configuré via `LLM_PROVIDER`
 - Génère un fichier Markdown par source dans `inbox/`
 - Frontmatter automatique avec source, date, tags
 
-**Mode CI** : si `XAIS_BRAIN_CI=1`, le budget est affiché mais aucun prompt interactif n'est déclenché — le script enchaîne directement sur le traitement.
+**Mode CI** : si `XAIS_BRAIN_CI=1` ou `CI=1`, le budget et les checkpoints sont affichés mais **aucun prompt interactif n'est bloquant** — le script assume "oui" et enchaîne directement. Idem si stdin n'est pas un TTY (pipe, redirection).
 
 ### 4. Confirmation
 
