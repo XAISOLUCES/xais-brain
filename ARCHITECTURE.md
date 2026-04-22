@@ -28,14 +28,15 @@ xais-brain/
 ├── LICENSE                            ← MIT
 ├── .gitignore
 ├── .env.example                       ← Template des clés API
-├── requirements.txt                   ← pypdf, python-docx, google-genai, anthropic, openai, python-dotenv
+├── requirements.txt                   ← pypdf, python-docx, google-genai, anthropic, openai, python-dotenv, pyyaml
 │
 ├── setup.sh                           ← Orchestrateur d'install (9 étapes)
 │
-├── scripts/                           ← Moteurs Python (file-intel, web-clip, vault-audit)
+├── scripts/                           ← Moteurs Python (file-intel, web-clip, vault-audit, budget)
 │   ├── file_intel.py                  ← Extracteurs PDF/DOCX/TXT/MD + main
 │   ├── web_clip.py                    ← URL → Markdown (piste 6B)
-│   ├── vault_audit.py                 ← Audit hygiene vault (piste 6E)
+│   ├── vault_audit.py                 ← Audit hygiène vault (pistes 6E + 6H)
+│   ├── budget.py                      ← Estimation tokens avant batch (piste 6F)
 │   └── providers/
 │       ├── __init__.py                ← get_provider() — factory selon LLM_PROVIDER
 │       ├── base.py                    ← LLMProvider (interface ABC)
@@ -46,6 +47,7 @@ xais-brain/
 │
 ├── vault-template/                    ← Source canonique copiée dans chaque vault
 │   ├── CLAUDE.md                      ← Template d'instructions pour Claude
+│   ├── GUIDE.md                       ← Guide utilisateur didactique (piste 6G)
 │   ├── MEMORY.md                      ← Index du système de mémoire
 │   ├── vault-config.json              ← Source de vérité structurée (user, llm, folders)
 │   │
@@ -65,6 +67,7 @@ xais-brain/
 │   │
 │   └── .claude/
 │       ├── settings.json              ← Permissions + déclaration des hooks
+│       ├── pricing.json               ← Tarifs LLM pour estimation budget (piste 6F)
 │       │
 │       ├── skills/                    ← 12 slash commands canoniques
 │       │   ├── vault-setup/SKILL.md   ← Interview utilisateur → personnalise CLAUDE.md
@@ -92,13 +95,20 @@ xais-brain/
 │
 └── specs/                             ← Méta : plans + handoffs (pas installé chez l'user)
     ├── done/
-    │   └── enrich-xais-brain-pkm-best-of.md
+    │   ├── enrich-xais-brain-pkm-best-of.md
+    │   ├── 00-plan-5-gaps-critiques.md
+    │   └── 06-integration-god-mode-patterns.md  ← Plan 06 livré 8/8 (pistes 6A-6H)
     └── handoffs/
         ├── 001-2026-04-07-xais-brain-from-scratch.md
         ├── 002-2026-04-08-publication-github-fixes-post-test.md
         ├── 003-2026-04-08-fixes-curl-bash-et-obsidian.md
         ├── 004-2026-04-09-enrich-pkm-bestof-build.md
-        └── 005-2026-04-09-import-vault-v2-et-coach-hardening.md
+        ├── 005-2026-04-09-import-vault-v2-et-coach-hardening.md
+        ├── 006-2026-04-11-audit-cleanup-extract-architecture.md
+        ├── 007-2026-04-12-5-gaps-session1-cli-ci-linux.md
+        ├── 008-2026-04-12-5-gaps-session2-web-clipper.md
+        ├── 009-2026-04-20-god-mode-patterns-piste-6a.md
+        └── 010-2026-04-21-pivot-axe-A-vault-audit-readme.md
 ```
 
 **Note** : le dossier `specs/` est versionné dans le repo mais **n'est pas copié** dans le vault de l'utilisateur. C'est un historique de développement (plans + handoffs de session) destiné aux contributeurs.
@@ -138,6 +148,9 @@ Voici ce que l'utilisateur obtient après `setup.sh` :
 │
 ├── scripts/                           ← Copié depuis xais-brain/scripts/
 │   ├── file_intel.py
+│   ├── web_clip.py
+│   ├── vault_audit.py
+│   ├── budget.py
 │   └── providers/
 │       ├── __init__.py
 │       ├── base.py
@@ -148,8 +161,9 @@ Voici ce que l'utilisateur obtient après `setup.sh` :
 │
 └── .claude/                           ← Tout ce qui est lu par Claude Code
     ├── settings.json                  ← Permissions + hooks déclarés
+    ├── pricing.json                   ← Tarifs LLM (piste 6F)
     │
-    ├── skills/                        ← 10 canoniques + 5 Kepano si activé
+    ├── skills/                        ← 12 canoniques + 5 Kepano si activé
     │   ├── vault-setup/SKILL.md
     │   ├── daily/SKILL.md
     │   ├── tldr/SKILL.md
@@ -160,6 +174,8 @@ Voici ce que l'utilisateur obtient après `setup.sh` :
     │   ├── import-vault/SKILL.md
     │   ├── project/SKILL.md
     │   ├── client/SKILL.md
+    │   ├── clip/SKILL.md
+    │   ├── vault-audit/SKILL.md
     │   │
     │   └── (si Kepano installé via setup.sh étape 9)
     │   ├── obsidian-cli/SKILL.md      ← CLI Obsidian officiel
@@ -201,7 +217,7 @@ Les skills sont **aussi** installés dans `~/.claude/skills/` (global) pour êtr
    ┌──────────────────────────────────────┐         ┌──────────────────────┐
    │           vault-template/            │         │       scripts/       │
    │  CLAUDE.md, MEMORY.md, .claude/...   │────────▶│  file_intel.py +     │
-   │  11 skills + 2 hooks + coach + cfg   │         │  providers/{3 LLMs}  │
+   │  12 skills + 2 hooks + coach + cfg   │         │  providers/{3 LLMs}  │
    └──────────────────┬───────────────────┘         └──────────┬───────────┘
                       │                                        │
                       ▼                                        ▼
@@ -212,7 +228,7 @@ Les skills sont **aussi** installés dans `~/.claude/skills/` (global) pour êtr
 │   │  Obsidian    │   │  Claude Code    │   │   Python venv            │  │
 │   │  (.obsidian) │   │  (.claude)      │   │  ~/.xais-brain-venv/     │  │
 │   │              │   │                 │   │                          │  │
-│   │  - Vault UI  │◀─▶│  - 11 skills    │──▶│  scripts/file_intel.py   │  │
+│   │  - Vault UI  │◀─▶│  - 12 skills    │──▶│  scripts/file_intel.py   │  │
 │   │  - Markdown  │   │  - 2 hooks      │   │  → providers/{LLM}       │  │
 │   │  - Plugins   │   │  - coach.md     │   │  → résumé Markdown       │  │
 │   │              │   │  - settings.json│   │                          │  │
@@ -267,11 +283,13 @@ Les skills sont **aussi** installés dans `~/.claude/skills/` (global) pour êtr
 │  Vault setup    │  Détecte si vault existant → demande confirmation
 │                 │  Crée la structure de dossiers
 │                 │  Copie vault-template/ → $VAULT_PATH/
-│                 │  Copie scripts/file_intel.py + providers/ → $VAULT_PATH/scripts/
+│                 │    (incl. GUIDE.md, .claude/pricing.json)
+│                 │  Copie scripts/{file_intel,web_clip,vault_audit,budget}.py
+│                 │    + providers/ → $VAULT_PATH/scripts/
 └────────┬────────┘
          ▼
 ┌─────────────────┐
-│  Étape 6        │  Boucle sur la liste hardcodée de 11 skills :
+│  Étape 6        │  Boucle sur la liste hardcodée de 12 skills :
 │  Skills install │  Copie vault-template/.claude/skills/$skill/SKILL.md
 │                 │   → $VAULT_PATH/.claude/skills/$skill/
 │                 │   → ~/.claude/skills/$skill/   (global)
@@ -408,6 +426,11 @@ Si `CLAUDE.md` absent → message « ce dossier ne ressemble pas à un vault xai
 │  2. get_provider() → instancie LLMProvider   │
 │     selon LLM_PROVIDER                       │
 │  3. discover_files() → liste pdf/docx/txt/md │
+│  4. announce_budget() (piste 6F)             │
+│     → lit .claude/pricing.json + estimate    │
+│     → "~487 pages, 36s-2 min, gratuit"       │
+│  5. prompt_checkpoint() pre-batch (piste 6C) │
+│     → bypass si XAIS_BRAIN_CI=1 ou non-TTY   │
 └────────┬─────────────────────────────────────┘
          ▼
 ┌──────────────────────────────────────────────┐  Pour chaque fichier :
@@ -421,15 +444,25 @@ Si `CLAUDE.md` absent → message « ce dossier ne ressemble pas à un vault xai
 │  ┌──────────────────────┐                    │
 │  │  provider.summarize()│                    │
 │  │  → Markdown FR       │                    │
-│  │  (frontmatter,       │                    │
-│  │   TL;DR, points clés,│                    │
+│  │  (frontmatter enrichi│                    │
+│  │   6B/6H + liens_forts│                    │
+│  │   + TL;DR, points,   │                    │
 │  │   actions)           │                    │
 │  └──────────┬───────────┘                    │
 │             ▼                                │
 │  ┌──────────────────────┐                    │
 │  │  Écrit               │                    │
 │  │  inbox/[slug].md     │                    │
-│  └──────────────────────┘                    │
+│  └──────────┬───────────┘                    │
+│             ▼                                │
+│  ┌──────────────────────────────┐            │
+│  │  append_fact_check_log()     │            │
+│  │  (piste 6D) — best-effort    │            │
+│  │  → 99-Meta/Fact-Check-Log.md │            │
+│  └──────────────────────────────┘            │
+│                                              │
+│  (Après les 3 premiers fichiers si batch≥6 :│
+│   prompt_checkpoint() post-preview — 6C)     │
 └──────────────────────────────────────────────┘
          │
          ▼
@@ -549,6 +582,8 @@ verification_date: 2026-04-21       # ISO YYYY-MM-DD
 statut: draft | verified | to-verify | archived
 importance: low | medium | high | core
 tags: [...]
+liens_forts: ["[[Concept1]]", "[[Concept2]]"]       # piste 6H — 2-5 concepts centraux
+liens_opposition: ["[[ContreIdee]]"]                # piste 6H — optionnel
 ---
 ```
 

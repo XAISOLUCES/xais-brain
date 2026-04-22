@@ -76,7 +76,7 @@ Trois différences concrètes vs. un Obsidian nu ou les templates "Claude + PKM"
 
 ### 1. Self-auditing
 
-`xb audit` scanne 7 symptômes de dégradation : **orphelines, anémiques, doublons, frontmatter incomplet, `to-verify` stale, tags incohérents, wikilinks cassés**. Output : un rapport Markdown checklist dans `99-Meta/Audit-YYYY-MM-DD.md`.
+`xb audit` scanne 8 symptômes de dégradation : **orphelines, anémiques, doublons, frontmatter incomplet, `to-verify` stale, tags incohérents, wikilinks cassés, notes peu liées** (< 3 wikilinks sortants). Output : un rapport Markdown checklist dans `99-Meta/Audit-YYYY-MM-DD.md`.
 
 `xb audit --migrate` complète automatiquement les frontmatter manquants des notes existantes, sans jamais écraser une valeur.
 
@@ -92,10 +92,18 @@ source_knowledge: web-checked | internal
 verification_date: 2026-04-21
 statut: draft | verified | to-verify | archived
 importance: low | medium | high | core
+tags: [tag1, tag2]
+liens_forts: ["[[Concept1]]", "[[Concept2]]"]
+liens_opposition: ["[[ContreIdee]]"]
 ---
 ```
 
 C'est ce moteur qui rend l'audit mesurable et les réponses de Claude pertinentes.
+
+**Auto-discipline intégrée** :
+- `/clip` et `/file-intel` loguent chaque note produite dans `99-Meta/Fact-Check-Log.md` (append-only — traçabilité des sources)
+- `/file-intel` annonce le budget tokens estimé avant le batch (provider, coût, durée) depuis `.claude/pricing.json`
+- Sur un batch ≥ 6 fichiers, un checkpoint humain s'affiche après les 3 premiers (bypass auto en CI)
 
 ### 3. Local-first, multi-LLM
 
@@ -110,6 +118,8 @@ Le setup installe `xb` dans `~/.local/bin/` — raccourcis utilisables depuis n'
 ```bash
 xb audit                      # Scanne et génère le rapport d'hygiène
 xb audit --migrate            # Complète les frontmatter manquants
+xb audit --json               # Sortie JSON sur stdout (CI / scripting)
+xb audit --output <path>      # Écrit le rapport ailleurs que dans 99-Meta/
 xb status                     # État du vault (inbox, daily, provider)
 xb daily                      # Lance /daily en one-shot
 xb inbox                      # Lance /inbox-zero en one-shot
@@ -160,6 +170,7 @@ Tape n'importe laquelle dans Claude Code pour la déclencher.
 | **Claude Code CLI** | L'IA qui lit et écrit dans ton vault |
 | **Python venv** (`~/.xais-brain-venv/`) | Isolé du système |
 | **12 slash commands** | Voir table ci-dessus |
+| **Guide utilisateur** (`GUIDE.md`) | Didactique 10 sections + FAQ, copié dans le vault |
 | **2 hooks FR** | SessionStart (contexte vault) + UserPromptSubmit (liste skills sur trigger FR) |
 | **Output style Coach FR** | Mode coach challengeant via `/output-style` |
 | **Permissions cadrées** | Écritures scopées, `.git/`/`.claude/` protégés, `rm -rf` refusé |
