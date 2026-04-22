@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import re
 import sys
+from datetime import date
 from pathlib import Path
 from typing import Callable
 
@@ -28,6 +29,7 @@ from dotenv import load_dotenv
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from providers import get_provider  # noqa: E402
+from providers._prompts import source_type_from_filename  # noqa: E402
 from providers.base import LLMProvider  # noqa: E402
 
 
@@ -93,6 +95,58 @@ def load_env(output_dir: Path) -> None:
         load_dotenv()  # fallback : cherche dans cwd
 
 
+# ── Fact-Check-Log (piste 6D) ─────────────────────────────────────────────────
+
+
+def extract_note_title(markdown: str, fallback: str) -> str:
+    """Extrait le premier `# Titre` d'un markdown (apres frontmatter).
+
+    Si aucun titre H1 n'est trouve, retourne `fallback` (generalement
+    le nom de fichier sans extension).
+    """
+    # Skip frontmatter si present (--- ... ---)
+    body = markdown
+    if markdown.lstrip().startswith("---"):
+        parts = markdown.split("---", 2)
+        if len(parts) >= 3:
+            body = parts[2]
+
+    for line in body.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("# ") and not stripped.startswith("## "):
+            return stripped[2:].strip() or fallback
+    return fallback
+
+
+def append_fact_check_log(
+    vault_dir: Path,
+    note_title: str,
+    source_file: Path,
+    source_type: str,
+    today: str,
+) -> None:
+    """Append une entree dans 99-Meta/Fact-Check-Log.md apres traitement d'un fichier.
+
+    No-op si le dossier 99-Meta/ n'existe pas (vault pre-6A ou non configure).
+    Piste 6D — traçabilite des sources pour /file-intel.
+    """
+    log_path = vault_dir / "99-Meta" / "Fact-Check-Log.md"
+    if not log_path.exists():
+        return
+    entry = (
+        f"\n## {today} — [[{note_title}]]\n"
+        f"- **Source** : {source_type} (`{source_file}`)\n"
+        "- **Skill** : /file-intel\n"
+        "- **Statut** : to-verify\n"
+    )
+    try:
+        with log_path.open("a", encoding="utf-8") as f:
+            f.write(entry)
+    except OSError:
+        # Log cassable mais non bloquant pour le traitement lui-meme
+        pass
+
+
 # ── Traitement principal ──────────────────────────────────────────────────────
 
 
@@ -139,6 +193,19 @@ def process_file(
 
     out_path = output_dir / f"{slugify(file_path.name)}.md"
     out_path.write_text(markdown, encoding="utf-8")
+
+    # Piste 6D — trace la source dans 99-Meta/Fact-Check-Log.md (best-effort)
+    # output_dir = <vault>/inbox → parent = <vault>
+    note_title = extract_note_title(markdown, fallback=out_path.stem)
+    source_type = source_type_from_filename(file_path.name)
+    append_fact_check_log(
+        vault_dir=output_dir.parent,
+        note_title=note_title,
+        source_file=file_path,
+        source_type=source_type,
+        today=date.today().isoformat(),
+    )
+
     return out_path
 
 

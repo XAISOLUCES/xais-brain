@@ -654,6 +654,7 @@ _Conservées pour historique. Les réponses font foi en §0.3._
 2. ✅ Piste 6A livrée (commit `fb0d8e0`).
 3. ✅ Piste 6B livrée — frontmatter enrichi pour `/clip`, `/file-intel`, `/inbox-zero`.
 4. ✅ Piste 6E livrée — skill `/vault-audit` + `scripts/vault_audit.py` + `xb audit` CLI (22 tests verts).
-5. → **Piste 6D** — Fact-Check-Log auto-alimenté par `/clip` et `/file-intel`.
-6. Chaque piste = 1 commit atomique. Worktree optionnel si piste longue.
-7. Déplacement de ce fichier vers `specs/done/` quand **toutes** les pistes non-optionnelles (6C-6G) sont mergées.
+5. ✅ Piste 6D livrée — Fact-Check-Log auto-alimenté par `/clip` (existant) et `/file-intel` (ajout 2026-04-22, 31 tests verts).
+6. → **Piste 6F** — Budget annoncé avant batch (gagne à passer avant 6C pour enrichir le checkpoint).
+7. Chaque piste = 1 commit atomique. Worktree optionnel si piste longue.
+8. Déplacement de ce fichier vers `specs/done/` quand **toutes** les pistes non-optionnelles (6C-6G) sont mergées.
